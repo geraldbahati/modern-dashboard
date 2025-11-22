@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Plus, Pencil, X, Circle, CheckCircle2 } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
 import { DashboardCard } from "@workspace/ui/components/dashboard-card";
+import { Skeleton } from "@workspace/ui/components/skeleton";
 
 interface Task {
   id: string;
@@ -186,6 +187,39 @@ export default function QuickTasks() {
                     )}
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </DashboardCard>
+  );
+}
+
+export function QuickTasksSkeleton() {
+  return (
+    <DashboardCard className="h-auto min-h-[360px]">
+      <div className="mb-3 flex items-center justify-between z-1 relative">
+        <div className="space-y-1.5">
+          <Skeleton className="h-5 w-32" />
+          <Skeleton className="h-4 w-48" />
+        </div>
+      </div>
+      <div className="flex-1 mt-4 flex flex-col">
+        <div className="flex flex-col h-full">
+          <div className="flex flex-wrap items-center gap-2 p-1 relative bg-secondary/50 w-full rounded-2xl border border-border/60 h-10">
+            <Skeleton className="h-full w-full rounded-lg" />
+          </div>
+          <div className="flex-1 relative mt-4">
+            <div className="bg-card border border-border/60 rounded-lg w-full relative overflow-hidden h-[320px] flex flex-col p-4 space-y-4">
+              <div className="flex gap-2">
+                <Skeleton className="h-9 flex-1 rounded-lg" />
+                <Skeleton className="h-9 w-9 rounded-lg" />
+              </div>
+              <div className="space-y-2">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full rounded-lg" />
+                ))}
               </div>
             </div>
           </div>

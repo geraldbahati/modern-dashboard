@@ -9,6 +9,7 @@ import {
 import { Download, ChevronLeft, ChevronRight } from "lucide-react";
 import { DashboardCard } from "@workspace/ui/components/dashboard-card";
 import { Button } from "@workspace/ui/components/button";
+import { Skeleton } from "@workspace/ui/components/skeleton";
 import {
   Table,
   TableBody,
@@ -91,7 +92,7 @@ export default function RecentProjects() {
   });
 
   return (
-    <DashboardCard className="p-0 overflow-hidden">
+    <DashboardCard className="p-0 overflow-hidden min-h-[450px]">
       <div className="p-6 flex items-center justify-between border-b border-border/50">
         <div>
           <h3 className="text-base font-semibold text-foreground">
@@ -216,6 +217,38 @@ export default function RecentProjects() {
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
+        </div>
+      </div>
+    </DashboardCard>
+  );
+}
+
+export function RecentProjectsSkeleton() {
+  return (
+    <DashboardCard className="p-0 overflow-hidden h-full">
+      <div className="p-6 flex items-center justify-between border-b border-border/50">
+        <div className="space-y-1.5">
+          <Skeleton className="h-5 w-32" />
+          <Skeleton className="h-4 w-48" />
+        </div>
+        <Skeleton className="h-8 w-20" />
+      </div>
+      <div className="p-0">
+        <div className="space-y-4 p-4">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 flex-1">
+                <Skeleton className="h-8 w-8 rounded-md" />
+                <div className="space-y-1 flex-1">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-3 w-32" />
+                </div>
+              </div>
+              <Skeleton className="h-6 w-16 rounded-full" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-8 w-8" />
+            </div>
+          ))}
         </div>
       </div>
     </DashboardCard>
