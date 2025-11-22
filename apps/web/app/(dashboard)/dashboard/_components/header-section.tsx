@@ -18,7 +18,7 @@ import { DashboardCard } from "@workspace/ui/components/dashboard-card";
 
 export function HeaderSectionSkeleton() {
   return (
-    <section className="bg-card rounded-3xl p-8 relative overflow-hidden border border-border h-[280px]">
+    <DashboardCard className="p-8 border-border h-auto min-h-[208px] rounded-3xl">
       <div className="flex justify-between items-start relative z-10">
         <div>
           <Skeleton className="h-10 w-64 mb-2" />
@@ -42,7 +42,7 @@ export function HeaderSectionSkeleton() {
           <Skeleton className="h-4 w-32 mt-1" />
         </div>
       </div>
-    </section>
+    </DashboardCard>
   );
 }
 

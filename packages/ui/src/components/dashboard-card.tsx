@@ -12,21 +12,24 @@ export function DashboardCard({
   return (
     <div
       className={cn(
-        "h-auto bg-card rounded-2xl border border-border/50 relative overflow-hidden w-full min-h-[360px] flex flex-col p-4",
+        "bg-sidebar rounded-2xl border border-border relative overflow-hidden w-full flex flex-col p-3 sm:p-4",
         className
       )}
       {...props}
     >
-      {/* Background Patterns */}
+      {/* Dot pattern background */}
       <div
-        className="absolute -inset-400 pointer-events-none opacity-[0.03] dark:opacity-[0.08]"
+        className="absolute -inset-400 pointer-events-none opacity-80"
         style={{
           backgroundImage:
-            "radial-gradient(circle, currentColor 1px, transparent 1px)",
-          backgroundSize: "16px 16px",
+            "radial-gradient(circle at center, var(--border) 1px, transparent 1px)",
+          backgroundSize: "24px 24px",
           transform: "rotate(40deg)",
+          maskImage:
+            "radial-gradient(circle at center, black 0%, transparent 70%)",
         }}
       />
+      {/* Gradient overlay */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{

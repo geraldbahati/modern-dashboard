@@ -12,6 +12,19 @@ import CalendarWidget, {
 } from "./_components/calendar-widget";
 import ActivityMap, { ActivityMapSkeleton } from "./_components/activity-map";
 
+import InsightAnalytics, {
+  InsightAnalyticsSkeleton,
+} from "./_components/insight-analytics";
+import RevenueAnalytics, {
+  RevenueAnalyticsSkeleton,
+} from "./_components/revenue-analytics";
+import PerformanceMetrics, {
+  PerformanceMetricsSkeleton,
+} from "./_components/performance-metrics";
+import PerformanceAnalytics, {
+  PerformanceAnalyticsSkeleton,
+} from "./_components/performance-analytics";
+
 export default function DashboardPage() {
   return (
     <main className="min-h-screen">
@@ -42,7 +55,20 @@ export default function DashboardPage() {
         </div>
 
         {/* Right Column (Analytics Sidebar) */}
-        <div className="lg:col-span-1">{/* <AnalyticsSidebar /> */}</div>
+        <div className="lg:col-span-1 flex flex-col gap-6">
+          <Suspense fallback={<InsightAnalyticsSkeleton />}>
+            <InsightAnalytics />
+          </Suspense>
+          <Suspense fallback={<RevenueAnalyticsSkeleton />}>
+            <RevenueAnalytics />
+          </Suspense>
+          <Suspense fallback={<PerformanceMetricsSkeleton />}>
+            <PerformanceMetrics />
+          </Suspense>
+          <Suspense fallback={<PerformanceAnalyticsSkeleton />}>
+            <PerformanceAnalytics />
+          </Suspense>
+        </div>
       </div>
     </main>
   );
