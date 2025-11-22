@@ -12,6 +12,7 @@ import {
   Users,
   Component,
 } from "lucide-react";
+import { usePathname } from "next/navigation";
 
 import {
   Sidebar,
@@ -30,23 +31,22 @@ import {
 const navMain = [
   {
     title: "Overview",
-    url: "#",
+    url: "/dashboard",
     icon: Home,
   },
   {
     title: "AI Assistant",
-    url: "#",
+    url: "/dashboard/ai-assistant",
     icon: Bot,
-    isActive: true,
   },
   {
     title: "Users",
-    url: "#",
+    url: "/dashboard/users",
     icon: Users,
   },
   {
     title: "Projects",
-    url: "#",
+    url: "/dashboard/projects",
     icon: Folder,
   },
 ];
@@ -54,17 +54,17 @@ const navMain = [
 const navAdmin = [
   {
     title: "Admin Management",
-    url: "#",
+    url: "/dashboard/admin-management",
     icon: UserCog,
   },
   {
     title: "Admin Roles",
-    url: "#",
+    url: "/dashboard/admin-roles",
     icon: Shield,
   },
   {
     title: "Settings",
-    url: "#",
+    url: "/dashboard/settings",
     icon: Settings,
   },
 ];
@@ -72,12 +72,14 @@ const navAdmin = [
 const navDemos = [
   {
     title: "UI Component",
-    url: "#",
+    url: "/dashboard/ui-component",
     icon: Component,
   },
 ];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const pathname = usePathname();
+
   return (
     <Sidebar
       collapsible="icon"
@@ -105,7 +107,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 >
                   <SidebarMenuButton
                     asChild
-                    isActive={item.isActive}
+                    isActive={pathname === item.url}
                     tooltip={item.title}
                     className="pl-4"
                   >
@@ -130,6 +132,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 >
                   <SidebarMenuButton
                     asChild
+                    isActive={pathname === item.url}
                     tooltip={item.title}
                     className="pl-4"
                   >
@@ -154,6 +157,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 >
                   <SidebarMenuButton
                     asChild
+                    isActive={pathname === item.url}
                     tooltip={item.title}
                     className="pl-4"
                   >

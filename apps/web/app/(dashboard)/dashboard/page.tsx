@@ -24,12 +24,14 @@ import PerformanceMetrics, {
 import PerformanceAnalytics, {
   PerformanceAnalyticsSkeleton,
 } from "./_components/performance-analytics";
+import { DashboardHeader } from "./_components/dashboard-header";
 
 export default function DashboardPage() {
   return (
-    <main className="min-h-screen">
-      {/* Main grid container */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mx-auto">
+    <div className="flex flex-col gap-6">
+      <DashboardHeader />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column (Main Content) */}
         <div className="lg:col-span-2 flex flex-col gap-6">
           <Suspense fallback={<HeaderSectionSkeleton />}>
             <HeaderSection />
@@ -70,6 +72,6 @@ export default function DashboardPage() {
           </Suspense>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

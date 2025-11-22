@@ -2,7 +2,6 @@
 
 import {
   Cloud,
-  CloudDrizzle,
   CloudFog,
   CloudLightning,
   CloudMoon,
