@@ -8,6 +8,7 @@ import {
   SortableOverlay,
 } from "@workspace/ui/components/sortable";
 import { cn } from "@workspace/ui/lib/utils";
+import { DashboardCard } from "@workspace/ui/components/dashboard-card";
 import {
   Activity,
   CheckCircle2,
@@ -76,15 +77,15 @@ function MetricCard({
 }) {
   const Icon = item.icon;
   return (
-    <div
+    <DashboardCard
       className={cn(
-        "bg-card border border-border/50 rounded-3xl p-6 flex flex-col justify-between h-full min-h-[110px] transition-colors",
+        "p-6 justify-between h-full min-h-[110px] transition-colors rounded-3xl",
         isOverlay
           ? "shadow-xl cursor-grabbing"
           : "cursor-grab active:cursor-grabbing hover:bg-accent/50"
       )}
     >
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center relative z-10">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
             <Icon className="w-5 h-5 text-foreground" />
@@ -98,7 +99,7 @@ function MetricCard({
         </div>
       </div>
 
-      <div className="flex items-end justify-between mt-4">
+      <div className="flex items-end justify-between mt-4 relative z-10">
         <h3 className="text-lg font-bold tracking-tight">{item.value}</h3>
         <div
           className={cn(
@@ -120,7 +121,7 @@ function MetricCard({
           {item.trend}
         </div>
       </div>
-    </div>
+    </DashboardCard>
   );
 }
 

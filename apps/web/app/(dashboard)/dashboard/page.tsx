@@ -4,6 +4,10 @@ import HeaderSection, {
 } from "./_components/header-section";
 import RecentProjects from "./_components/recent-projects";
 import MetricsCards from "./_components/metrics-cards";
+import QuickTasks from "./_components/quick-tasks";
+import CalendarWidget, {
+  CalendarWidgetSkeleton,
+} from "./_components/calendar-widget";
 
 export default function DashboardPage() {
   return (
@@ -17,8 +21,8 @@ export default function DashboardPage() {
           <MetricsCards />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* <QuickTasks /> */}
-            {/* <CalendarWidget /> */}
+            <QuickTasks />
+            <CalendarWidget />
           </div>
 
           <RecentProjects />

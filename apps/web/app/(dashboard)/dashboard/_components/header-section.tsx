@@ -14,6 +14,7 @@ import {
 import { useEffect, useState } from "react";
 import { useWeather } from "../../../../hooks/use-weather";
 import { Skeleton } from "@workspace/ui/components/skeleton";
+import { DashboardCard } from "@workspace/ui/components/dashboard-card";
 
 export function HeaderSectionSkeleton() {
   return (
@@ -132,7 +133,7 @@ export default function HeaderSection() {
   }
 
   return (
-    <section className="bg-card rounded-3xl p-8 relative overflow-hidden border border-border">
+    <DashboardCard className="p-8 border-border h-auto min-h-0 rounded-3xl">
       <div className="flex justify-between items-start relative z-10">
         <div>
           <h1 className="text-3xl font-bold mb-2">{getGreeting()}, Demo</h1>
@@ -195,6 +196,6 @@ export default function HeaderSection() {
 
       {/* Background Gradient Glow Effect */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 blur-[80px] rounded-full pointer-events-none" />
-    </section>
+    </DashboardCard>
   );
 }
