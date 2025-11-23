@@ -9,7 +9,10 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@orpc/client": "^1.0.0",
     "@tanstack/react-table": "^8.21.3",
+    "@workspace/api": "workspace:*",
+    "@workspace/security": "workspace:*",
     "@workspace/ui": "workspace:*",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.475.0",

@@ -22,4 +22,8 @@ export const auth = createAuth({
 // Export types for use in routes/middleware
 export type Auth = typeof auth;
 export type Session = typeof auth.$Infer.Session;
-export type User = Session["user"];
+
+// Extended user type that includes role from admin plugin
+export type User = Session["user"] & {
+  role?: string | null;
+};

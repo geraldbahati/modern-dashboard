@@ -17,7 +17,7 @@ import {
 } from "./permissions";
 
 export const authClient = createAuthClient({
-  baseURL: process.env.NEXT_PUBLIC_AUTH_URL || "http://localhost:3001/api/auth",
+  baseURL: process.env.NEXT_PUBLIC_AUTH_URL || "http://localhost:3000/api/auth",
   plugins: [
     inferAdditionalFields<Auth>(),
     adminClient({

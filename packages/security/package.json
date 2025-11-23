@@ -1,0 +1,23 @@
+{
+  "name": "@workspace/security",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@arcjet/bun": "^1.0.0-alpha.34",
+    "@arcjet/next": "^1.0.0-alpha.34"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.9",
+    "@workspace/typescript-config": "workspace:*",
+    "typescript": "^5.9.2"
+  },
+  "exports": {
+    "./rules": "./src/rules.ts",
+    "./bun": "./src/bun.ts",
+    "./next": "./src/next.ts"
+  }
+}
