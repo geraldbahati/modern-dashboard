@@ -8,10 +8,10 @@ import Notifications from "./topbar/notifications";
 import SearchBar from "./topbar/search-bar";
 import { UserMenu } from "./topbar/user-menu";
 
-export default function TopBar() {
+export function TopBar() {
   return (
-    <div className="sticky top-0 z-[60] flex h-[5.25rem] items-center px-4 w-full">
-      <header className="bg-sidebar relative flex h-16 w-full items-center rounded-2xl border px-4 shadow-sm overflow-hidden">
+    <div className="fixed top-0 left-0 right-0 z-[60] flex h-[5.25rem] items-center px-4 w-full pointer-events-none bg-background/80 backdrop-blur-md">
+      <header className="bg-sidebar relative flex h-16 w-full items-center rounded-2xl border px-4 shadow-sm overflow-hidden pointer-events-auto">
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
