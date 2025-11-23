@@ -20,6 +20,7 @@
   "exports": {
     "./client": "./src/client.ts",
     "./config": "./src/config.ts",
+    "./server": "./src/server.ts",
     "./types": "./src/types.ts",
     "./permissions": "./src/permissions.ts"
   }

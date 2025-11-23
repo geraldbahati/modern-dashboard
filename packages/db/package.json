@@ -15,6 +15,7 @@
     "typescript": "^5.9.2"
   },
   "exports": {
-    "./auth-db": "./src/auth-db/index.ts"
+    "./auth-db": "./src/auth-db/index.ts",
+    "./auth-db/schema": "./src/auth-db/schema.ts"
   }
 }

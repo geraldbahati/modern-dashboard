@@ -9,7 +9,6 @@ import {
   openAPI,
 } from "better-auth/plugins";
 import { passkey } from "better-auth/plugins/passkey";
-import { nextCookies } from "better-auth/next-js";
 import {
   sendWelcomeEmail,
   sendVerificationEmail,
@@ -25,17 +24,23 @@ import {
 } from "./permissions";
 
 // Define the input needed from the specific app
-interface AuthConfigParams {
+export interface AuthConfigParams {
   baseURL: string;
   trustedOrigins: string[];
+  basePath?: string;
 }
 
-export const getAuthConfig = (params: AuthConfigParams): BetterAuthOptions => {
+/**
+ * Base auth configuration shared between all frameworks
+ * Does NOT include framework-specific plugins (like nextCookies)
+ */
+export const getBaseAuthConfig = (
+  params: AuthConfigParams
+): BetterAuthOptions => {
   return {
     database: drizzleAdapter(authDb, { provider: "pg" }),
-
-    // These come from the App, ensuring they are always correct for the environment
     baseURL: params.baseURL,
+    basePath: params.basePath || "/api/auth",
     trustedOrigins: params.trustedOrigins,
     secret: process.env.BETTER_AUTH_SECRET,
 
@@ -72,7 +77,6 @@ export const getAuthConfig = (params: AuthConfigParams): BetterAuthOptions => {
       cookieCache: { enabled: true, maxAge: 60 * 60 * 24 * 30 },
     },
     plugins: [
-      nextCookies(),
       admin({
         ac,
         roles: { admin: adminRole, moderator, editor, user: userRole },
@@ -91,20 +95,29 @@ export const getAuthConfig = (params: AuthConfigParams): BetterAuthOptions => {
         invitationExpiresIn: 60 * 60 * 24 * 7,
       }),
       passkey({
-        rpName: "Better Auth App",
-        // Passkey relies on the Frontend URL, so we derive it from trustedOrigins or pass explicitly
+        rpName: "Modern Dashboard",
         rpID: new URL(params.baseURL).hostname,
-        origin: params.trustedOrigins[0],
+        origin: params.trustedOrigins[0] || params.baseURL,
       }),
       openAPI(),
     ],
   };
 };
 
+/**
+ * Create auth instance for generic/API usage
+ * Use this for Hono, Express, or other non-Next.js frameworks
+ */
+export const createAuth = (params: AuthConfigParams) => {
+  return betterAuth(getBaseAuthConfig(params));
+};
+
+// Legacy export for backwards compatibility and CLI usage
+export const getAuthConfig = getBaseAuthConfig;
+
 // Default auth instance for CLI usage (schema generation, etc.)
-// Apps should use getAuthConfig() with their specific baseURL and trustedOrigins
 export const auth = betterAuth(
-  getAuthConfig({
+  getBaseAuthConfig({
     baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
     trustedOrigins: [process.env.BETTER_AUTH_URL || "http://localhost:3000"],
   })
