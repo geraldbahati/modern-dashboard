@@ -4,7 +4,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "db:push:auth": "drizzle-kit push --config=drizzle.auth.config.ts",
+    "db:push:app": "drizzle-kit push --config=drizzle.app.config.ts",
+    "db:generate:auth": "drizzle-kit generate --config=drizzle.auth.config.ts",
+    "db:generate:app": "drizzle-kit generate --config=drizzle.app.config.ts",
+    "db:migrate:auth": "drizzle-kit migrate --config=drizzle.auth.config.ts",
+    "db:migrate:app": "drizzle-kit migrate --config=drizzle.app.config.ts",
+    "db:studio:auth": "drizzle-kit studio --config=drizzle.auth.config.ts",
+    "db:studio:app": "drizzle-kit studio --config=drizzle.app.config.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
@@ -12,10 +20,13 @@
     "drizzle-zod": "^0.8.3"
   },
   "devDependencies": {
+    "drizzle-kit": "^0.31.7",
     "typescript": "^5.9.2"
   },
   "exports": {
     "./auth-db": "./src/auth-db/index.ts",
-    "./auth-db/schema": "./src/auth-db/schema.ts"
+    "./auth-db/schema": "./src/auth-db/schema.ts",
+    "./app-db": "./src/app-db/index.ts",
+    "./app-db/schema": "./src/app-db/schema.ts"
   }
 }

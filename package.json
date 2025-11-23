@@ -7,11 +7,20 @@
     "dev": "turbo dev",
     "lint": "turbo lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "auth:generate": "pnpm dlx @better-auth/cli generate --config ./packages/auth/src/config.ts --output ./packages/db/src/auth-db/new-auth-schema.ts --yes"
+    "auth:generate": "dotenv -e apps/server/.env -- pnpm dlx @better-auth/cli generate --config ./packages/auth/src/config.ts --output ./packages/db/src/auth-db/new-auth-schema.ts --yes",
+    "db:push:auth": "dotenv -e apps/server/.env -- pnpm -C packages/db db:push:auth",
+    "db:push:app": "dotenv -e apps/server/.env -- pnpm -C packages/db db:push:app",
+    "db:generate:auth": "dotenv -e apps/server/.env -- pnpm -C packages/db db:generate:auth",
+    "db:generate:app": "dotenv -e apps/server/.env -- pnpm -C packages/db db:generate:app",
+    "db:migrate:auth": "dotenv -e apps/server/.env -- pnpm -C packages/db db:migrate:auth",
+    "db:migrate:app": "dotenv -e apps/server/.env -- pnpm -C packages/db db:migrate:app",
+    "db:studio:auth": "dotenv -e apps/server/.env -- pnpm -C packages/db db:studio:auth",
+    "db:studio:app": "dotenv -e apps/server/.env -- pnpm -C packages/db db:studio:app"
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
+    "dotenv-cli": "^8.0.0",
     "prettier": "^3.6.2",
     "turbo": "^2.5.5",
     "typescript": "5.7.3"
