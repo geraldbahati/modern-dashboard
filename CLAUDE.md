@@ -6,23 +6,37 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 pnpm install          # Install all dependencies
-pnpm dev              # Start development (Next.js on port 3000)
+pnpm dev              # Start all apps (Next.js :3000, Hono :3001)
 pnpm build            # Build all packages via Turbo
 pnpm lint             # Lint all packages
 pnpm format           # Format all TS/TSX/MD files with Prettier
-pnpm auth:generate    # Generate auth database schema from better-auth config
+```
+
+### Database Commands
+
+```bash
+# Auth database (better-auth schema)
+pnpm auth:generate    # Generate auth schema from better-auth config
+pnpm db:push:auth     # Push auth schema to database
+pnpm db:generate:auth # Generate auth migrations
+pnpm db:migrate:auth  # Run auth migrations
+pnpm db:studio:auth   # Open Drizzle Studio for auth DB
+
+# App database (application data)
+pnpm db:push:app      # Push app schema to database
+pnpm db:generate:app  # Generate app migrations
+pnpm db:migrate:app   # Run app migrations
+pnpm db:studio:app    # Open Drizzle Studio for app DB
 ```
 
 ### Package-specific commands
 
 ```bash
-# From apps/web
-pnpm run dev          # Next.js dev server only
-pnpm run build        # Build web app only
+# Hono server (uses Bun runtime)
+cd apps/server && bun run dev     # Start server on port 3001
 
-# Type checking individual packages
-cd packages/auth && pnpm run type-check
-cd packages/db && pnpm run type-check
+# Next.js web app
+cd apps/web && pnpm run dev       # Start on port 3000
 ```
 
 ## Architecture Overview
@@ -31,41 +45,106 @@ This is a **pnpm monorepo** using **Turbo** for build orchestration.
 
 ### Workspace Structure
 
-- **apps/web** - Next.js 16 frontend with React 19 and React Compiler
-- **packages/ui** - Shared shadcn/ui component library (Radix UI primitives + Tailwind)
-- **packages/auth** - Authentication module using better-auth (email/password, 2FA, passkeys, RBAC)
-- **packages/db** - Drizzle ORM setup with Neon serverless PostgreSQL
+- **apps/web** - Next.js 16 frontend (React 19, React Compiler, port 3000)
+- **apps/server** - Hono API server (Bun runtime, port 3001)
+- **packages/api** - oRPC router definitions and typed client
+- **packages/auth** - Authentication module (better-auth)
+- **packages/db** - Drizzle ORM with dual databases (auth + app)
+- **packages/ui** - shadcn/ui component library
+- **packages/security** - Arcjet security middleware
 - **packages/eslint-config** - Shared ESLint configurations
 - **packages/typescript-config** - Shared TypeScript base configs
+
+### Two-Server Architecture
+
+The app uses separate frontend and backend servers:
+
+1. **Next.js (port 3000)** - Handles UI rendering, uses `@workspace/auth/next` for server-side session verification
+2. **Hono (port 3001)** - Handles API routes (`/api/rpc/*`) and auth endpoints (`/api/auth/*`)
+
+**Important**: Both servers must share the same `BETTER_AUTH_SECRET` and `AUTH_DATABASE_URL` for session verification to work.
+
+### API Layer (oRPC)
+
+The API uses oRPC for type-safe RPC:
+
+```typescript
+// Define procedures in packages/api/src/routers/
+import { publicProcedure, protectedProcedure } from "../middleware/auth";
+
+// Client usage
+import { createBrowserClient } from "@workspace/api/client";
+const client = createBrowserClient("http://localhost:3001/api/rpc");
+await client.users.list();
+```
+
+Procedure types: `publicProcedure`, `protectedProcedure`, `adminProcedure`, `moderatorProcedure`
+
+### Dual Database Setup
+
+Two separate Neon PostgreSQL databases:
+
+1. **Auth DB** (`AUTH_DATABASE_URL`) - better-auth tables (users, sessions, etc.)
+2. **App DB** (`DATABASE_URL`) - Application data (projects, etc.)
+
+```typescript
+import { authDb } from "@workspace/db/auth-db";
+import { appDb } from "@workspace/db/app-db";
+```
 
 ### Import Patterns
 
 ```typescript
 import { Button } from "@workspace/ui/components/button"
 import { authClient } from "@workspace/auth/client"
-import { db } from "@workspace/db/auth-db"
+import { auth } from "@workspace/auth/next"           // Next.js server components
+import { createAuth } from "@workspace/auth/server"   // Hono/non-Next.js
+import { authDb } from "@workspace/db/auth-db"
+import { appDb } from "@workspace/db/app-db"
+import { createBrowserClient } from "@workspace/api/client"
 ```
 
-### Key Dependencies
+## Next.js 16 with Cache Components
 
-- **Next.js 16** with App Router and React Compiler enabled
-- **React 19** with experimental features
-- **better-auth** for authentication (supports email verification, 2FA, passkeys, organizations, RBAC)
-- **Drizzle ORM** with Neon serverless PostgreSQL
-- **Resend** for transactional emails
-- **Tailwind CSS 4** with shadcn/ui components
+The app uses Next.js 16 with `cacheComponents: true` (Partial Prerendering). When accessing runtime data like `headers()` or `cookies()`:
+
+```typescript
+import { connection } from "next/server";
+import { headers } from "next/headers";
+
+async function MyComponent() {
+  await connection(); // Defer to request time
+  const headersList = await headers();
+  // ...
+}
+```
+
+Always wrap components using runtime APIs in `<Suspense>`.
 
 ## Environment Variables
 
-Required for full functionality:
-- `AUTH_DATABASE_URL` - Neon PostgreSQL connection string
-- `BETTER_AUTH_SECRET` - Authentication secret
-- `BETTER_AUTH_URL` - Base URL (defaults to http://localhost:3000)
-- `RESEND_API_KEY` - Email service API key
+### apps/server/.env
+```
+AUTH_DATABASE_URL=     # Neon PostgreSQL for auth
+DATABASE_URL=          # Neon PostgreSQL for app data
+BETTER_AUTH_SECRET=    # Auth secret (must match web app)
+BETTER_AUTH_URL=http://localhost:3001
+FRONTEND_URL=http://localhost:3000  # Frontend URL for email links
+RESEND_API_KEY=        # Email service
+ARCJET_KEY=            # Security/rate limiting
+```
+
+### apps/web/.env.local
+```
+NEXT_PUBLIC_AUTH_URL=http://localhost:3001/api/auth  # Client-side auth URL
+BETTER_AUTH_URL=http://localhost:3001                # Server-side auth URL
+BETTER_AUTH_SECRET=                                   # Must match server
+AUTH_DATABASE_URL=                                    # Must match server
+```
 
 ## Auth Configuration
 
-The auth system in `packages/auth/src/config.ts` includes:
+The auth system (`packages/auth/src/config.ts`) includes:
 - Email/password with verification
 - Two-factor authentication
 - Passkey/WebAuthn support
@@ -73,9 +152,10 @@ The auth system in `packages/auth/src/config.ts` includes:
 - Organization/team management
 - RBAC with roles: admin, moderator, editor, user
 
-## UI Component Library
+## Adding UI Components
 
-Components in `packages/ui/src/components/` follow shadcn/ui patterns:
-- Built on Radix UI primitives
-- Styled with Tailwind CSS and class-variance-authority
-- Export via `@workspace/ui/components/*`
+```bash
+pnpm dlx shadcn@latest add button -c apps/web
+```
+
+Components are placed in `packages/ui/src/components/` and exported via `@workspace/ui/components/*`.

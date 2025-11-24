@@ -8,6 +8,9 @@ const resend = new Resend(process.env.RESEND_API_KEY || "re_placeholder");
 // For production, set RESEND_FROM_EMAIL to your verified domain email
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
 
+// Frontend URL for email links (defaults to Next.js frontend)
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
+
 type User = {
   id: string;
   email: string;
@@ -199,7 +202,7 @@ export async function sendWelcomeEmail({ user }: { user: User }) {
               </div>
 
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${process.env.BETTER_AUTH_URL}"
+                <a href="${FRONTEND_URL}"
                    style="background-color: #10b981; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 16px;">
                   Get Started
                 </a>
@@ -268,7 +271,7 @@ export async function sendOrganizationInvitation(
   data: OrganizationInvitationData
 ) {
   try {
-    const inviteLink = `${process.env.BETTER_AUTH_URL}/organization/accept-invitation/${data.id}`;
+    const inviteLink = `${FRONTEND_URL}/organization/accept-invitation/${data.id}`;
 
     const { data: emailData, error } = await resend.emails.send({
       from: FROM_EMAIL,
