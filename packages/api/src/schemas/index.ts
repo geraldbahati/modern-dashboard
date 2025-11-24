@@ -108,6 +108,25 @@ export const dashboardMetricsSchema = z.object({
   totalProjects: metricItemSchema,
 });
 
+// Quick Task schemas
+export const quickTaskSchema = z.object({
+  id: z.string().uuid(),
+  text: z.string(),
+  ownerId: z.string(),
+  completed: z.boolean(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
+export const createQuickTaskSchema = z.object({
+  text: z.string().min(1).max(500),
+});
+
+export const updateQuickTaskSchema = z.object({
+  text: z.string().min(1).max(500).optional(),
+  completed: z.boolean().optional(),
+});
+
 // Export types
 export type Pagination = z.infer<typeof paginationSchema>;
 export type CursorPagination = z.infer<typeof cursorPaginationSchema>;
@@ -120,3 +139,6 @@ export type UpdateProject = z.infer<typeof updateProjectSchema>;
 export type MetricTrend = z.infer<typeof metricTrendEnum>;
 export type MetricItem = z.infer<typeof metricItemSchema>;
 export type DashboardMetrics = z.infer<typeof dashboardMetricsSchema>;
+export type QuickTask = z.infer<typeof quickTaskSchema>;
+export type CreateQuickTask = z.infer<typeof createQuickTaskSchema>;
+export type UpdateQuickTask = z.infer<typeof updateQuickTaskSchema>;

@@ -1,25 +1,127 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Pencil, X, Circle, CheckCircle2 } from "lucide-react";
+import { Plus, Pencil, X, Circle, CheckCircle2, Loader2 } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
 import { DashboardCard } from "@workspace/ui/components/dashboard-card";
 import { Skeleton } from "@workspace/ui/components/skeleton";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { orpc } from "@/lib/orpc";
 
-interface Task {
+type QuickTask = {
   id: string;
   text: string;
+  ownerId: string;
   completed: boolean;
-}
+  createdAt: Date;
+  updatedAt: Date;
+};
 
 export default function QuickTasks() {
   const [activeTab, setActiveTab] = useState<"active" | "completed">("active");
   const [newTask, setNewTask] = useState("");
-  const [tasks, setTasks] = useState<Task[]>([
-    { id: "1", text: "this tasks three", completed: false },
-    { id: "2", text: "this tasks one", completed: false },
-    { id: "3", text: "Completed task example", completed: true },
-  ]);
+  const queryClient = useQueryClient();
+  const queryKey = orpc.quickTasks.list.queryKey();
+
+  // Fetch tasks from the server
+  const {
+    data: tasks = [],
+    isLoading,
+    error,
+  } = useQuery(orpc.quickTasks.list.queryOptions({}));
+
+  // Create task mutation with optimistic update
+  const createMutation = useMutation({
+    ...orpc.quickTasks.create.mutationOptions(),
+    onMutate: async (newTaskData) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey });
+
+      // Snapshot previous value
+      const previousTasks = queryClient.getQueryData<QuickTask[]>(queryKey);
+
+      // Optimistically add the new task
+      const optimisticTask: QuickTask = {
+        id: `temp-${Date.now()}`,
+        text: newTaskData.text,
+        ownerId: "",
+        completed: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      queryClient.setQueryData<QuickTask[]>(queryKey, (old = []) => [
+        optimisticTask,
+        ...old,
+      ]);
+
+      setNewTask("");
+
+      return { previousTasks };
+    },
+    onError: (_err, _newTask, context) => {
+      // Rollback on error
+      if (context?.previousTasks) {
+        queryClient.setQueryData(queryKey, context.previousTasks);
+      }
+    },
+    onSettled: () => {
+      // Always refetch after error or success
+      queryClient.invalidateQueries({ queryKey });
+    },
+  });
+
+  // Toggle task mutation with optimistic update
+  const toggleMutation = useMutation({
+    ...orpc.quickTasks.toggle.mutationOptions(),
+    onMutate: async ({ id }) => {
+      await queryClient.cancelQueries({ queryKey });
+
+      const previousTasks = queryClient.getQueryData<QuickTask[]>(queryKey);
+
+      // Optimistically toggle the task
+      queryClient.setQueryData<QuickTask[]>(queryKey, (old = []) =>
+        old.map((task) =>
+          task.id === id ? { ...task, completed: !task.completed } : task
+        )
+      );
+
+      return { previousTasks };
+    },
+    onError: (_err, _variables, context) => {
+      if (context?.previousTasks) {
+        queryClient.setQueryData(queryKey, context.previousTasks);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey });
+    },
+  });
+
+  // Delete task mutation with optimistic update
+  const deleteMutation = useMutation({
+    ...orpc.quickTasks.remove.mutationOptions(),
+    onMutate: async ({ id }) => {
+      await queryClient.cancelQueries({ queryKey });
+
+      const previousTasks = queryClient.getQueryData<QuickTask[]>(queryKey);
+
+      // Optimistically remove the task
+      queryClient.setQueryData<QuickTask[]>(queryKey, (old = []) =>
+        old.filter((task) => task.id !== id)
+      );
+
+      return { previousTasks };
+    },
+    onError: (_err, _variables, context) => {
+      if (context?.previousTasks) {
+        queryClient.setQueryData(queryKey, context.previousTasks);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey });
+    },
+  });
 
   const activeTasks = tasks.filter((t) => !t.completed);
   const completedTasks = tasks.filter((t) => t.completed);
@@ -27,23 +129,33 @@ export default function QuickTasks() {
 
   const addTask = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTask.trim()) return;
-    setTasks([
-      ...tasks,
-      { id: Date.now().toString(), text: newTask, completed: false },
-    ]);
-    setNewTask("");
+    if (!newTask.trim() || createMutation.isPending) return;
+    createMutation.mutate({ text: newTask });
   };
 
   const toggleTask = (id: string) => {
-    setTasks(
-      tasks.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t))
-    );
+    toggleMutation.mutate({ id });
   };
 
   const deleteTask = (id: string) => {
-    setTasks(tasks.filter((t) => t.id !== id));
+    deleteMutation.mutate({ id });
   };
+
+  // Show loading skeleton
+  if (isLoading) {
+    return <QuickTasksSkeleton />;
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <DashboardCard className="h-auto min-h-[360px]">
+        <div className="flex items-center justify-center h-full text-muted-foreground">
+          <p>Failed to load tasks. Please try again.</p>
+        </div>
+      </DashboardCard>
+    );
+  }
 
   return (
     <DashboardCard className="h-auto min-h-[360px]">
@@ -113,11 +225,15 @@ export default function QuickTasks() {
                   />
                   <button
                     type="submit"
-                    disabled={!newTask.trim()}
+                    disabled={!newTask.trim() || createMutation.isPending}
                     className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60 disabled:hover:opacity-60 disabled:cursor-not-allowed"
                     aria-label="Add task"
                   >
-                    <Plus className="w-4 h-4" />
+                    {createMutation.isPending ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Plus className="w-4 h-4" />
+                    )}
                   </button>
                 </form>
 

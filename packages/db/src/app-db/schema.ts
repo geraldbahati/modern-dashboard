@@ -78,3 +78,25 @@ export const tasksRelations = relations(tasks, ({ one }) => ({
     references: [projects.id],
   }),
 }));
+
+/**
+ * Quick Tasks table - personal tasks without project association
+ * Used for the "Quick Tasks" widget on the dashboard
+ */
+export const quickTasks = pgTable("quick_tasks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  text: text("text").notNull(),
+
+  // Owner reference (userId from auth database)
+  ownerId: text("owner_id").notNull(),
+
+  // Status
+  completed: boolean("completed").default(false).notNull(),
+
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});

@@ -7,6 +7,7 @@ import { usersRouter } from "./routers/users";
 import { healthRouter } from "./routers/health";
 import { projectsRouter } from "./routers/projects";
 import { metricsRouter } from "./routers/metrics";
+import { quickTasksRouter } from "./routers/quick-tasks";
 
 // Combined router - this is the source of truth for all API routes
 export const router = {
@@ -14,6 +15,7 @@ export const router = {
   health: healthRouter,
   projects: projectsRouter,
   metrics: metricsRouter,
+  quickTasks: quickTasksRouter,
 };
 
 // Export router type for client inference

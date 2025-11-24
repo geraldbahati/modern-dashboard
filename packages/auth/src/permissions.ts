@@ -4,35 +4,30 @@ import { defaultStatements, adminAc } from "better-auth/plugins/admin/access";
 /**
  * Access Control Statement
  * Define all resources and their available permissions
- * Use `as const` for proper TypeScript type inference
  */
 export const statement = {
-  ...defaultStatements, // Include default admin permissions (user, session management)
+  ...defaultStatements,
   post: ["create", "read", "update", "delete"],
   comment: ["create", "read", "update", "delete"],
   analytics: ["view"],
   settings: ["view", "edit"],
-  // Organization permissions
   organization: ["create", "read", "update", "delete"],
   member: ["create", "read", "update", "delete"],
   invitation: ["create", "read", "cancel"],
+  project: ["create", "read", "update", "delete"],
+  task: ["create", "read", "update", "delete"],
 } as const;
 
 /**
- * Create Access Control instance
+ * Create Access Control instance for better-auth
  */
 export const ac = createAccessControl(statement);
 
 /**
- * Role Definitions
- * Each role has specific permissions for different resources
- */
-
-/**
- * Admin Role - Full access to everything
+ * Better-auth role definitions
  */
 export const admin = ac.newRole({
-  ...adminAc.statements, // Include all default admin permissions
+  ...adminAc.statements,
   post: ["create", "read", "update", "delete"],
   comment: ["create", "read", "update", "delete"],
   analytics: ["view"],
@@ -40,11 +35,10 @@ export const admin = ac.newRole({
   organization: ["create", "read", "update", "delete"],
   member: ["create", "read", "update", "delete"],
   invitation: ["create", "read", "cancel"],
+  project: ["create", "read", "update", "delete"],
+  task: ["create", "read", "update", "delete"],
 });
 
-/**
- * Moderator Role - Can manage content but not users
- */
 export const moderator = ac.newRole({
   post: ["read", "update", "delete"],
   comment: ["read", "update", "delete"],
@@ -53,11 +47,10 @@ export const moderator = ac.newRole({
   organization: ["read"],
   member: ["read"],
   invitation: ["read"],
+  project: ["create", "read", "update", "delete"],
+  task: ["create", "read", "update", "delete"],
 });
 
-/**
- * Editor Role - Can create and edit content
- */
 export const editor = ac.newRole({
   post: ["create", "read", "update"],
   comment: ["create", "read", "update"],
@@ -66,31 +59,75 @@ export const editor = ac.newRole({
   organization: ["read"],
   member: ["read"],
   invitation: ["read"],
+  project: ["create", "read", "update"],
+  task: ["create", "read", "update"],
 });
 
-/**
- * User Role - Basic permissions
- */
 export const user = ac.newRole({
   post: ["create", "read"],
   comment: ["create", "read"],
   organization: ["create", "read"],
   member: ["read"],
   invitation: ["read"],
+  project: ["read"],
+  task: ["read"],
 });
 
 /**
- * Export all roles for easy access
+ * Permission lookup for hasPermission helper
  */
-export const roles = {
-  admin,
-  moderator,
-  editor,
-  user,
-} as const;
+const rolePermissions: Record<string, Record<string, string[]>> = {
+  admin: {
+    post: ["create", "read", "update", "delete"],
+    comment: ["create", "read", "update", "delete"],
+    analytics: ["view"],
+    settings: ["view", "edit"],
+    organization: ["create", "read", "update", "delete"],
+    member: ["create", "read", "update", "delete"],
+    invitation: ["create", "read", "cancel"],
+    project: ["create", "read", "update", "delete"],
+    task: ["create", "read", "update", "delete"],
+  },
+  moderator: {
+    post: ["read", "update", "delete"],
+    comment: ["read", "update", "delete"],
+    analytics: ["view"],
+    settings: ["view"],
+    organization: ["read"],
+    member: ["read"],
+    invitation: ["read"],
+    project: ["create", "read", "update", "delete"],
+    task: ["create", "read", "update", "delete"],
+  },
+  editor: {
+    post: ["create", "read", "update"],
+    comment: ["create", "read", "update"],
+    analytics: ["view"],
+    settings: ["view"],
+    organization: ["read"],
+    member: ["read"],
+    invitation: ["read"],
+    project: ["create", "read", "update"],
+    task: ["create", "read", "update"],
+  },
+  user: {
+    post: ["create", "read"],
+    comment: ["create", "read"],
+    organization: ["create", "read"],
+    member: ["read"],
+    invitation: ["read"],
+    project: ["read"],
+    task: ["read"],
+  },
+};
 
 /**
- * Role names type for TypeScript
+ * All roles for better-auth config
+ */
+export const roles = { admin, moderator, editor, user } as const;
+
+/**
+ * Role names type
  */
 export type RoleName = keyof typeof roles;
 
@@ -103,3 +140,16 @@ export const roleDescriptions: Record<RoleName, string> = {
   editor: "Can create and edit content",
   user: "Basic user permissions",
 };
+
+/**
+ * Check if a role has permission for a resource action
+ */
+export function hasPermission<
+  R extends keyof typeof statement,
+  A extends (typeof statement)[R][number],
+>(role: RoleName, resource: R, action: A): boolean {
+  const permissions = rolePermissions[role] as Record<string, readonly string[]>;
+  const resourcePermissions = permissions[resource];
+  if (!resourcePermissions) return false;
+  return resourcePermissions.includes(action as string);
+}
