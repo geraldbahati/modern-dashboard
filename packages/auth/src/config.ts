@@ -44,6 +44,34 @@ export const getBaseAuthConfig = (
     trustedOrigins: params.trustedOrigins,
     secret: process.env.BETTER_AUTH_SECRET,
 
+    // Social OAuth providers
+    socialProviders: {
+      // Google OAuth - requires GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET
+      ...(process.env.GOOGLE_CLIENT_ID &&
+        process.env.GOOGLE_CLIENT_SECRET && {
+          google: {
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          },
+        }),
+      // GitHub OAuth - requires GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET
+      ...(process.env.GITHUB_CLIENT_ID &&
+        process.env.GITHUB_CLIENT_SECRET && {
+          github: {
+            clientId: process.env.GITHUB_CLIENT_ID,
+            clientSecret: process.env.GITHUB_CLIENT_SECRET,
+          },
+        }),
+    },
+
+    // Account linking for social providers
+    account: {
+      accountLinking: {
+        enabled: true,
+        trustedProviders: ["google", "github"],
+      },
+    },
+
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: true,

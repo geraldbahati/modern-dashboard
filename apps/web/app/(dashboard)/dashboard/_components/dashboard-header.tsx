@@ -42,3 +42,19 @@ export function DashboardHeader({
     </div>
   );
 }
+
+export function DashboardHeaderSkeleton() {
+  return (
+    <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <div className="h-5 w-32 bg-accent/50 animate-pulse rounded-md mb-2" />
+        <div className="h-8 w-48 bg-accent/50 animate-pulse rounded-md mb-1" />
+        <div className="h-4 w-64 bg-accent/50 animate-pulse rounded-md" />
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="h-8 w-28 bg-accent/50 animate-pulse rounded-md" />
+        <div className="h-8 w-24 bg-accent/50 animate-pulse rounded-md" />
+      </div>
+    </div>
+  );
+}

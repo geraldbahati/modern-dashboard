@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { cookies } from "next/headers";
 import HeaderSection, {
   HeaderSectionSkeleton,
 } from "./_components/header-section";
@@ -21,12 +22,31 @@ import RevenueAnalytics, {
 import PerformanceMetrics, {
   PerformanceMetricsSkeleton,
 } from "./_components/performance-metrics";
-import PerformanceAnalytics, {
-  PerformanceAnalyticsSkeleton,
+import PerformanceAnalytics,
+  { PerformanceAnalyticsSkeleton,
 } from "./_components/performance-analytics";
 import { DashboardHeader } from "./_components/dashboard-header";
+import { getQueryClient, HydrateClient } from "@/lib/query/hydration";
+import { createServerOrpc } from "@/lib/orpc";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const queryClient = getQueryClient();
+  const cookieStore = await cookies();
+  const serverOrpc = createServerOrpc(cookieStore.toString());
+
+  // Prefetch metrics data on the server
+  // Wrapped in try-catch to handle auth errors gracefully
+  // If prefetch fails, client will fetch on mount
+  try {
+    await queryClient.prefetchQuery(
+      serverOrpc.metrics.getDashboardMetrics.queryOptions({})
+    );
+  } catch (error) {
+    // Log error in development, silently fail in production
+    // Client-side will retry with proper credentials
+    console.error("Failed to prefetch metrics:", error);
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <DashboardHeader
@@ -39,7 +59,9 @@ export default function DashboardPage() {
           <Suspense fallback={<HeaderSectionSkeleton />}>
             <HeaderSection />
           </Suspense>
-          <MetricsCards />
+          <HydrateClient client={queryClient}>
+            <MetricsCards />
+          </HydrateClient>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Suspense fallback={<QuickTasksSkeleton />}>

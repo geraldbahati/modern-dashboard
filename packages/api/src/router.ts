@@ -6,12 +6,14 @@
 import { usersRouter } from "./routers/users";
 import { healthRouter } from "./routers/health";
 import { projectsRouter } from "./routers/projects";
+import { metricsRouter } from "./routers/metrics";
 
 // Combined router - this is the source of truth for all API routes
 export const router = {
   users: usersRouter,
   health: healthRouter,
   projects: projectsRouter,
+  metrics: metricsRouter,
 };
 
 // Export router type for client inference

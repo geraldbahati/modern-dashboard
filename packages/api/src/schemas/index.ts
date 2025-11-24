@@ -89,6 +89,25 @@ export const updateProjectSchema = z.object({
   isPublic: z.boolean().optional(),
 });
 
+// Dashboard metrics schemas
+export const metricTrendEnum = z.enum(["up", "down", "neutral"]);
+
+export const metricItemSchema = z.object({
+  label: z.string(),
+  value: z.number(),
+  unit: z.string().optional(),
+  change: z.number(),
+  trend: metricTrendEnum,
+  period: z.string(),
+});
+
+export const dashboardMetricsSchema = z.object({
+  activeUsers: metricItemSchema,
+  avgResponseTime: metricItemSchema,
+  taskCompletion: metricItemSchema,
+  totalProjects: metricItemSchema,
+});
+
 // Export types
 export type Pagination = z.infer<typeof paginationSchema>;
 export type CursorPagination = z.infer<typeof cursorPaginationSchema>;
@@ -98,3 +117,6 @@ export type UpdateUser = z.infer<typeof updateUserSchema>;
 export type Project = z.infer<typeof projectSchema>;
 export type CreateProject = z.infer<typeof createProjectSchema>;
 export type UpdateProject = z.infer<typeof updateProjectSchema>;
+export type MetricTrend = z.infer<typeof metricTrendEnum>;
+export type MetricItem = z.infer<typeof metricItemSchema>;
+export type DashboardMetrics = z.infer<typeof dashboardMetricsSchema>;

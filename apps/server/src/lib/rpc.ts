@@ -3,12 +3,14 @@
  * Bridges oRPC router with Hono server
  */
 
-import { OpenAPIHandler } from "@orpc/openapi/fetch";
+import { RPCHandler } from "@orpc/server/fetch";
 import { router, type AuthContext } from "@workspace/api/router";
 import { auth } from "./auth";
 
-// Create OpenAPI handler (supports .route() with GET/POST methods)
-export const rpcHandler = new OpenAPIHandler(router);
+// Create RPC handler for oRPC client communication
+// Note: RPCHandler works with RPCLink clients (standard oRPC protocol)
+// For OpenAPI/REST compatibility, use OpenAPIHandler from @orpc/openapi/fetch
+export const rpcHandler = new RPCHandler(router);
 
 // Extended user type that includes role from admin plugin
 interface UserWithRole {
