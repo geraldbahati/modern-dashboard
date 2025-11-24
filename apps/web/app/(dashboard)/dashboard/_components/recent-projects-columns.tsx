@@ -1,13 +1,7 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import {
-  MoreHorizontal,
-  Code,
-  Smartphone,
-  LayoutDashboard,
-  Cloud,
-} from "lucide-react";
+import { MoreHorizontal, FolderKanban } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import {
   DropdownMenu,
@@ -22,10 +16,14 @@ import { cn } from "@workspace/ui/lib/utils";
 export type Project = {
   id: string;
   name: string;
-  description: string;
-  status: "Ready" | "In Progress" | "Failed";
-  lastUpdated: string;
-  icon: React.ElementType;
+  description: string | null;
+  slug: string;
+  imageUrl: string | null;
+  ownerId: string;
+  status: "active" | "archived" | "deleted";
+  isPublic: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 export const columns: ColumnDef<Project>[] = [
@@ -34,18 +32,17 @@ export const columns: ColumnDef<Project>[] = [
     header: "Name",
     cell: ({ row }) => {
       const project = row.original;
-      const Icon = project.icon;
       return (
         <div className="flex items-center gap-3">
           <div className="p-1.5 bg-muted rounded-md border border-border flex-shrink-0">
-            <Icon className="w-4 h-4 text-foreground" />
+            <FolderKanban className="w-4 h-4 text-foreground" />
           </div>
           <div className="flex flex-col min-w-0">
             <span className="font-medium text-foreground truncate">
               {project.name}
             </span>
             <span className="text-xs text-muted-foreground truncate">
-              {project.description}
+              {project.description || "No description"}
             </span>
           </div>
         </div>
@@ -56,54 +53,60 @@ export const columns: ColumnDef<Project>[] = [
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
-      const status = row.getValue("status") as string;
-      let badgeClass = "";
+      const status = row.getValue("status") as Project["status"];
+      const statusConfig = {
+        active: {
+          label: "Active",
+          className:
+            "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-900/40",
+        },
+        archived: {
+          label: "Archived",
+          className:
+            "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-900/40",
+        },
+        deleted: {
+          label: "Deleted",
+          className:
+            "bg-red-50 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-300 dark:border-red-900/40",
+        },
+      };
 
-      switch (status) {
-        case "Ready":
-          badgeClass =
-            "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-900/40";
-          break;
-        case "In Progress":
-          badgeClass =
-            "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-900/40";
-          break;
-        case "Failed":
-          badgeClass =
-            "bg-red-50 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-300 dark:border-red-900/40";
-          break;
-        default:
-          badgeClass =
-            "bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-500/10 dark:text-gray-300 dark:border-gray-900/40";
-      }
+      const config = statusConfig[status] || {
+        label: status,
+        className:
+          "bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-500/10 dark:text-gray-300 dark:border-gray-900/40",
+      };
 
       return (
         <span
           className={cn(
-            "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border",
-            badgeClass
+            "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border capitalize",
+            config.className
           )}
         >
-          {status}
+          {config.label}
         </span>
       );
     },
   },
   {
-    accessorKey: "lastUpdated",
+    accessorKey: "updatedAt",
     header: "Last Updated",
     cell: ({ row }) => {
-      return (
-        <span className="text-muted-foreground">
-          {row.getValue("lastUpdated")}
-        </span>
-      );
+      const date = row.getValue("updatedAt") as Date;
+      const formatted = new Intl.DateTimeFormat("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }).format(new Date(date));
+      return <span className="text-muted-foreground">{formatted}</span>;
     },
   },
   {
     id: "actions",
     header: () => <div className="text-right">Actions</div>,
-    cell: ({ row }) => {
+    cell: () => {
       return (
         <div className="text-right">
           <DropdownMenu>

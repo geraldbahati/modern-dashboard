@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -18,61 +19,9 @@ import {
   TableHeader,
   TableRow,
 } from "@workspace/ui/components/table";
-import { columns, Project } from "./recent-projects-columns";
-import { Code, Smartphone, LayoutDashboard, Cloud } from "lucide-react";
-import { useState } from "react";
-
-const data: Project[] = [
-  {
-    id: "1",
-    name: "E-Commerce Platform",
-    description: "Complete online store with payment integration",
-    status: "Ready",
-    lastUpdated: "11/17/2025",
-    icon: Code,
-  },
-  {
-    id: "2",
-    name: "Mobile App (iOS & Android)",
-    description: "Cross-platform mobile application with push notifications",
-    status: "Ready",
-    lastUpdated: "11/17/2025",
-    icon: Smartphone,
-  },
-  {
-    id: "3",
-    name: "Dashboard Analytics",
-    description: "Real-time business intelligence dashboard",
-    status: "In Progress",
-    lastUpdated: "11/17/2025",
-    icon: LayoutDashboard,
-  },
-  {
-    id: "4",
-    name: "API Gateway Service",
-    description: "Microservices architecture with GraphQL",
-    status: "Ready",
-    lastUpdated: "11/17/2025",
-    icon: Cloud,
-  },
-  // Adding more dummy data for pagination demo
-  {
-    id: "5",
-    name: "User Authentication",
-    description: "OAuth2 and JWT implementation",
-    status: "Ready",
-    lastUpdated: "11/16/2025",
-    icon: Code,
-  },
-  {
-    id: "6",
-    name: "Payment Gateway",
-    description: "Stripe and PayPal integration",
-    status: "Failed",
-    lastUpdated: "11/15/2025",
-    icon: Code,
-  },
-];
+import { columns, type Project } from "./recent-projects-columns";
+import { useQuery } from "@tanstack/react-query";
+import { orpc } from "@/lib/orpc";
 
 export default function RecentProjects() {
   const [pagination, setPagination] = useState({
@@ -80,8 +29,23 @@ export default function RecentProjects() {
     pageSize: 4,
   });
 
+  const {
+    data: projectsData,
+    isLoading,
+    error,
+  } = useQuery(
+    orpc.projects.list.queryOptions({
+      input: {
+        limit: 100, // Fetch more for client-side pagination
+        offset: 0,
+      },
+    })
+  );
+
+  const projects: Project[] = projectsData?.data ?? [];
+
   const table = useReactTable({
-    data,
+    data: projects,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -91,8 +55,22 @@ export default function RecentProjects() {
     },
   });
 
+  if (isLoading) {
+    return <RecentProjectsSkeleton />;
+  }
+
+  if (error) {
+    return (
+      <DashboardCard className="p-0 overflow-hidden min-h-[500px]">
+        <div className="flex items-center justify-center h-full text-muted-foreground p-6">
+          <p>Failed to load projects. Please try again.</p>
+        </div>
+      </DashboardCard>
+    );
+  }
+
   return (
-    <DashboardCard className="p-0 overflow-hidden min-h-[500px]">
+    <DashboardCard className="p-0 overflow-hidden min-h-[450px]">
       <div className="p-6 flex items-center justify-between border-b border-border/50">
         <div>
           <h3 className="text-base font-semibold text-foreground">
@@ -158,7 +136,7 @@ export default function RecentProjects() {
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No results.
+                  No projects found. Create your first project to get started.
                 </TableCell>
               </TableRow>
             )}
@@ -169,9 +147,11 @@ export default function RecentProjects() {
       <div className="flex items-center justify-between px-6 py-4 border-t border-border/50 bg-muted/10">
         <div className="text-xs text-muted-foreground">
           Showing{" "}
-          {table.getState().pagination.pageIndex *
-            table.getState().pagination.pageSize +
-            1}{" "}
+          {projects.length > 0
+            ? table.getState().pagination.pageIndex *
+                table.getState().pagination.pageSize +
+              1
+            : 0}{" "}
           to{" "}
           {Math.min(
             (table.getState().pagination.pageIndex + 1) *
@@ -191,7 +171,6 @@ export default function RecentProjects() {
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <div className="flex items-center gap-1">
-            {/* Simple pagination numbers for demo */}
             {Array.from({ length: table.getPageCount() }, (_, i) => (
               <Button
                 key={i}
