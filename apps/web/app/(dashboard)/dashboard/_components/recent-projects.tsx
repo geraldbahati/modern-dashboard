@@ -92,7 +92,7 @@ export default function RecentProjects() {
   });
 
   return (
-    <DashboardCard className="p-0 overflow-hidden min-h-[450px]">
+    <DashboardCard className="p-0 overflow-hidden min-h-[500px]">
       <div className="p-6 flex items-center justify-between border-b border-border/50">
         <div>
           <h3 className="text-base font-semibold text-foreground">

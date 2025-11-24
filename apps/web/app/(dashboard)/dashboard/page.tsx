@@ -81,7 +81,7 @@ export default async function DashboardPage() {
         {/* Left Column (Main Content) */}
         <div className="lg:col-span-2 flex flex-col gap-6">
           <Suspense fallback={<HeaderSectionSkeleton />}>
-            <HeaderSection />
+            <HeaderSection userName={user?.name} />
           </Suspense>
 
           {canViewAnalytics && (

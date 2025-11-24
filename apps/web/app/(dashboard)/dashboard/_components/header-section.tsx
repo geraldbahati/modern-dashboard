@@ -45,10 +45,17 @@ export function HeaderSectionSkeleton() {
   );
 }
 
-export default function HeaderSection() {
+interface HeaderSectionProps {
+  userName?: string;
+}
+
+export default function HeaderSection({ userName }: HeaderSectionProps) {
   const [mounted, setMounted] = useState(false);
   const [date, setDate] = useState(new Date());
   const { weather, loading, error } = useWeather();
+
+  // Get first name from full name
+  const displayName = userName?.split(" ")[0] || "there";
 
   useEffect(() => {
     setMounted(true);
@@ -135,7 +142,7 @@ export default function HeaderSection() {
     <DashboardCard className="p-8 border-border h-auto min-h-[208px] rounded-3xl">
       <div className="flex justify-between items-start relative z-10">
         <div>
-          <h1 className="text-3xl font-bold mb-2">{getGreeting()}, Demo</h1>
+          <h1 className="text-3xl font-bold mb-2">{getGreeting()}, {displayName}</h1>
           <p className="text-gray-400 text-sm">
             Ready to make today productive! 🚀
           </p>
