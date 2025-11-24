@@ -63,6 +63,7 @@ app.all("/api/rpc/*", apiSecurityMiddleware, async (c) => {
     prefix: "/api/rpc",
     context: {
       headers: c.req.raw.headers,
+      request: c.req.raw,
       ...authContext,
     },
   });

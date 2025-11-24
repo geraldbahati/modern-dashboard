@@ -5,11 +5,13 @@
 
 import { usersRouter } from "./routers/users";
 import { healthRouter } from "./routers/health";
+import { projectsRouter } from "./routers/projects";
 
 // Combined router - this is the source of truth for all API routes
 export const router = {
   users: usersRouter,
   health: healthRouter,
+  projects: projectsRouter,
 };
 
 // Export router type for client inference
@@ -29,3 +31,13 @@ export type {
   AuthUser,
   AuthSession,
 } from "./middleware/auth";
+
+// Re-export security middlewares
+export {
+  readSecurityProcedure,
+  writeSecurityProcedure,
+  heavyWriteSecurityProcedure,
+  standardSecurityProcedure,
+  publicReadSecurityProcedure,
+  publicStandardSecurityProcedure,
+} from "./middleware/security";

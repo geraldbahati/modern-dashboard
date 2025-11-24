@@ -25,6 +25,7 @@ export interface AuthContext {
 
 export interface RequestContext {
   headers: Headers;
+  request: Request;
 }
 
 // Full context type

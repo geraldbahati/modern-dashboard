@@ -53,6 +53,36 @@ export const apiRateLimitConfig = {
 } as const;
 
 /**
+ * Rate limiting for read operations (GET requests)
+ * Higher limit since reads are less expensive
+ */
+export const readRateLimitConfig = {
+  mode: getDefaultMode(),
+  interval: "1m",
+  max: 180, // 180 requests per minute for reads
+} as const;
+
+/**
+ * Rate limiting for write operations (POST, PATCH, PUT)
+ * More restrictive than reads
+ */
+export const writeRateLimitConfig = {
+  mode: getDefaultMode(),
+  interval: "1m",
+  max: 40, // 40 requests per minute for writes
+} as const;
+
+/**
+ * Rate limiting for heavy write operations (bulk operations, file uploads)
+ * Very restrictive to prevent abuse
+ */
+export const heavyWriteRateLimitConfig = {
+  mode: getDefaultMode(),
+  interval: "1m",
+  max: 2, // 2 requests per minute for heavy writes
+} as const;
+
+/**
  * Rate limiting for sensitive operations (password reset, etc.)
  */
 export const sensitiveRateLimitConfig = {

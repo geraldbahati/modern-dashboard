@@ -3,7 +3,7 @@
  * Import from "@workspace/security/bun"
  */
 
-import arcjet, { shield, detectBot, fixedWindow } from "@arcjet/bun";
+import arcjet, { shield, detectBot, fixedWindow, slidingWindow } from "@arcjet/bun";
 import {
   shieldConfig,
   authRateLimitConfig,
@@ -86,4 +86,4 @@ export const createApiArcjet = (key: string) => {
 };
 
 // Re-export utilities
-export { arcjet, shield, detectBot, fixedWindow };
+export { arcjet, shield, detectBot, fixedWindow, slidingWindow };

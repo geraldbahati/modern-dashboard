@@ -11,6 +11,7 @@
     "@orpc/openapi": "^1.0.0",
     "@orpc/server": "^1.0.0",
     "@workspace/db": "workspace:*",
+    "@workspace/security": "workspace:*",
     "drizzle-orm": "^0.44.7",
     "zod": "^3.24.0"
   },

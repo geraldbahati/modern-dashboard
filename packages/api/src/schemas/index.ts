@@ -53,9 +53,48 @@ export const searchSchema = z.object({
   ...paginationSchema.shape,
 });
 
+// Project schemas
+export const projectStatusEnum = z.enum(["active", "archived", "deleted"]);
+
+export const projectSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  description: z.string().nullable(),
+  slug: z.string(),
+  imageUrl: z.string().nullable(),
+  ownerId: z.string(),
+  status: projectStatusEnum,
+  isPublic: z.boolean(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
+export const createProjectSchema = z.object({
+  name: z.string().min(1).max(255),
+  description: z.string().max(1000).optional(),
+  slug: z
+    .string()
+    .min(1)
+    .max(100)
+    .regex(/^[a-z0-9-]+$/, "Slug must be lowercase alphanumeric with dashes"),
+  imageUrl: z.string().url().optional(),
+  isPublic: z.boolean().default(false),
+});
+
+export const updateProjectSchema = z.object({
+  name: z.string().min(1).max(255).optional(),
+  description: z.string().max(1000).optional(),
+  imageUrl: z.string().url().nullable().optional(),
+  status: projectStatusEnum.optional(),
+  isPublic: z.boolean().optional(),
+});
+
 // Export types
 export type Pagination = z.infer<typeof paginationSchema>;
 export type CursorPagination = z.infer<typeof cursorPaginationSchema>;
 export type User = z.infer<typeof userSchema>;
 export type CreateUser = z.infer<typeof createUserSchema>;
 export type UpdateUser = z.infer<typeof updateUserSchema>;
+export type Project = z.infer<typeof projectSchema>;
+export type CreateProject = z.infer<typeof createProjectSchema>;
+export type UpdateProject = z.infer<typeof updateProjectSchema>;
