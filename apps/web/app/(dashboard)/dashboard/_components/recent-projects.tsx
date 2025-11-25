@@ -61,7 +61,7 @@ export default function RecentProjects() {
 
   if (error) {
     return (
-      <DashboardCard className="p-0 overflow-hidden min-h-[500px]">
+      <DashboardCard className="p-0 overflow-hidden min-h-[480px]">
         <div className="flex items-center justify-center h-full text-muted-foreground p-6">
           <p>Failed to load projects. Please try again.</p>
         </div>
@@ -70,7 +70,7 @@ export default function RecentProjects() {
   }
 
   return (
-    <DashboardCard className="p-0 overflow-hidden min-h-[450px]">
+    <DashboardCard className="p-0 overflow-hidden min-h-[480px]">
       <div className="p-6 flex items-center justify-between border-b border-border/50">
         <div>
           <h3 className="text-base font-semibold text-foreground">

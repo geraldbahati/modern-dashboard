@@ -12,7 +12,7 @@ export function DashboardCard({
   return (
     <div
       className={cn(
-        "bg-sidebar rounded-2xl border border-border relative overflow-hidden w-full flex flex-col p-3 sm:p-4",
+        "bg-sidebar p-3 sm:p-4 rounded-2xl border border-border relative overflow-hidden w-full flex flex-col",
         className
       )}
       {...props}

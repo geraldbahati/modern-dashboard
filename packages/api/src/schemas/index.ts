@@ -127,7 +127,39 @@ export const updateQuickTaskSchema = z.object({
   completed: z.boolean().optional(),
 });
 
+// Insights Analytics schemas
+export const insightMetricSchema = z.object({
+  name: z.string(),
+  value: z.number().min(0).max(100),
+  label: z.string(),
+  description: z.string(),
+  color: z.string(),
+});
+
+export const insightsPerformanceSchema = z.object({
+  taskCompletion: insightMetricSchema,
+  userEngagement: insightMetricSchema,
+  responseTime: insightMetricSchema,
+  overallScore: z.number().min(0).max(100),
+});
+
+export const insightsTrendsSchema = z.object({
+  userGrowth: insightMetricSchema,
+  engagementRate: insightMetricSchema,
+  retention: insightMetricSchema,
+  overallScore: z.number().min(0).max(100),
+});
+
+export const insightsAnalyticsSchema = z.object({
+  performance: insightsPerformanceSchema,
+  trends: insightsTrendsSchema,
+});
+
 // Export types
+export type InsightMetric = z.infer<typeof insightMetricSchema>;
+export type InsightsPerformance = z.infer<typeof insightsPerformanceSchema>;
+export type InsightsTrends = z.infer<typeof insightsTrendsSchema>;
+export type InsightsAnalytics = z.infer<typeof insightsAnalyticsSchema>;
 export type Pagination = z.infer<typeof paginationSchema>;
 export type CursorPagination = z.infer<typeof cursorPaginationSchema>;
 export type User = z.infer<typeof userSchema>;

@@ -139,10 +139,12 @@ export default function HeaderSection({ userName }: HeaderSectionProps) {
   }
 
   return (
-    <DashboardCard className="p-8 border-border h-auto min-h-[208px] rounded-3xl">
-      <div className="flex justify-between items-start relative z-10">
+    <DashboardCard className="border-border h-auto min-h-[208px] rounded-3xl">
+      <div className="flex justify-between items-start relative z-10 p-3">
         <div>
-          <h1 className="text-3xl font-bold mb-2">{getGreeting()}, {displayName}</h1>
+          <h1 className="text-3xl font-bold mb-2">
+            {getGreeting()}, {displayName}
+          </h1>
           <p className="text-gray-400 text-sm">
             Ready to make today productive! 🚀
           </p>

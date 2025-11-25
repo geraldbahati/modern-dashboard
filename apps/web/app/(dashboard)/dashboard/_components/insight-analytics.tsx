@@ -12,24 +12,8 @@ import {
 } from "@workspace/ui/components/chart";
 import { DashboardCard } from "@workspace/ui/components/dashboard-card";
 import { Skeleton } from "@workspace/ui/components/skeleton";
-
-const chartData = [
-  {
-    name: "Response Time",
-    value: 78,
-    fill: "var(--color-responseTime)",
-  },
-  {
-    name: "User Engagement",
-    value: 84,
-    fill: "var(--color-userEngagement)",
-  },
-  {
-    name: "Task Completion",
-    value: 85,
-    fill: "var(--color-taskCompletion)",
-  },
-];
+import { useQuery } from "@tanstack/react-query";
+import { orpc } from "@/lib/orpc";
 
 const chartConfig = {
   value: {
@@ -47,12 +31,63 @@ const chartConfig = {
     label: "Response Time",
     color: "hsl(220, 9%, 76%)",
   },
+  userGrowth: {
+    label: "User Growth",
+    color: "hsl(217, 91%, 60%)",
+  },
+  engagementRate: {
+    label: "Engagement Rate",
+    color: "hsl(142, 71%, 45%)",
+  },
+  retention: {
+    label: "Retention",
+    color: "hsl(220, 9%, 76%)",
+  },
 } satisfies ChartConfig;
 
 export default function InsightAnalytics() {
   const [activeTab, setActiveTab] = useState<"performance" | "trends">(
     "performance"
   );
+
+  const {
+    data: insights,
+    isLoading,
+    error,
+  } = useQuery(orpc.insights.getInsights.queryOptions({}));
+
+  if (isLoading) {
+    return <InsightAnalyticsSkeleton />;
+  }
+
+  if (error || !insights) {
+    return (
+      <DashboardCard className="w-full h-auto min-h-0">
+        <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+          <p>Failed to load insights. Please try again.</p>
+        </div>
+      </DashboardCard>
+    );
+  }
+
+  const currentData = activeTab === "performance" ? insights.performance : insights.trends;
+  const metrics = activeTab === "performance"
+    ? [
+        { key: "taskCompletion", data: insights.performance.taskCompletion, Icon: Target, iconColor: "text-blue-400", bgColor: "rgba(96, 165, 250, 0.2)" },
+        { key: "userEngagement", data: insights.performance.userEngagement, Icon: Users, iconColor: "text-green-400", bgColor: "rgba(74, 222, 128, 0.2)" },
+        { key: "responseTime", data: insights.performance.responseTime, Icon: Clock, iconColor: "text-gray-300", bgColor: "rgba(209, 213, 219, 0.2)" },
+      ]
+    : [
+        { key: "userGrowth", data: insights.trends.userGrowth, Icon: TrendingUp, iconColor: "text-blue-400", bgColor: "rgba(96, 165, 250, 0.2)" },
+        { key: "engagementRate", data: insights.trends.engagementRate, Icon: Users, iconColor: "text-green-400", bgColor: "rgba(74, 222, 128, 0.2)" },
+        { key: "retention", data: insights.trends.retention, Icon: Clock, iconColor: "text-gray-300", bgColor: "rgba(209, 213, 219, 0.2)" },
+      ];
+
+  const chartData = metrics.map((m) => ({
+    name: m.data.name,
+    value: m.data.value,
+    fill: `var(--color-${m.key})`,
+  }));
 
   return (
     <DashboardCard className="w-full h-auto min-h-0">
@@ -163,76 +198,34 @@ export default function InsightAnalytics() {
                     </ChartContainer>
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                       <span className="text-lg font-bold text-foreground">
-                        85%
+                        {currentData.overallScore}%
                       </span>
                     </div>
                   </div>
                   <div className="flex-1 flex flex-col gap-2 min-w-[200px]">
-                    <div className="flex items-center gap-2 p-2 rounded-lg">
-                      <div
-                        className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-                        style={{ backgroundColor: "rgba(96, 165, 250, 0.2)" }}
-                      >
-                        <Target className="w-3.5 h-3.5 text-blue-400" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2 mb-0.5">
-                          <span className="text-xs font-medium text-foreground truncate">
-                            Task Completion
-                          </span>
-                          <span className="text-xs font-semibold text-blue-400 flex-shrink-0">
-                            85%
-                          </span>
+                    {metrics.map((metric) => (
+                      <div key={metric.key} className="flex items-center gap-2 p-2 rounded-lg">
+                        <div
+                          className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+                          style={{ backgroundColor: metric.bgColor }}
+                        >
+                          <metric.Icon className={cn("w-3.5 h-3.5", metric.iconColor)} />
                         </div>
-                        <p className="text-[10px] text-muted-foreground line-clamp-1">
-                          Overall completion rate
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 p-2 rounded-lg">
-                      <div
-                        className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-                        style={{ backgroundColor: "rgba(74, 222, 128, 0.2)" }}
-                      >
-                        <Users className="w-3.5 h-3.5 text-green-400" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2 mb-0.5">
-                          <span className="text-xs font-medium text-foreground truncate">
-                            User Engagement
-                          </span>
-                          <span className="text-xs font-semibold text-green-400 flex-shrink-0">
-                            84%
-                          </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2 mb-0.5">
+                            <span className="text-xs font-medium text-foreground truncate">
+                              {metric.data.label}
+                            </span>
+                            <span className={cn("text-xs font-semibold flex-shrink-0", metric.iconColor)}>
+                              {metric.data.value}%
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground line-clamp-1">
+                            {metric.data.description}
+                          </p>
                         </div>
-                        <p className="text-[10px] text-muted-foreground line-clamp-1">
-                          Active user participation
-                        </p>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2 p-2 rounded-lg">
-                      <div
-                        className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-                        style={{
-                          backgroundColor: "rgba(209, 213, 219, 0.2)",
-                        }}
-                      >
-                        <Clock className="w-3.5 h-3.5 text-gray-300" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2 mb-0.5">
-                          <span className="text-xs font-medium text-foreground truncate">
-                            Response Time
-                          </span>
-                          <span className="text-xs font-semibold text-gray-300 flex-shrink-0">
-                            78%
-                          </span>
-                        </div>
-                        <p className="text-[10px] text-muted-foreground line-clamp-1">
-                          Average response efficiency
-                        </p>
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 </div>
               </div>
