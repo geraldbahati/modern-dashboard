@@ -1,6 +1,9 @@
-import { Button } from "@workspace/ui/components/button";
+"use client";
+
+import { useState } from "react";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { Separator } from "@workspace/ui/components/separator";
+import { cn } from "@workspace/ui/lib/utils";
 
 import LanguageSelector from "./topbar/language-selector";
 import ModeToggle from "./topbar/mode-toggle";
@@ -9,8 +12,10 @@ import SearchBar from "./topbar/search-bar";
 import { UserMenu } from "./topbar/user-menu";
 
 export function TopBar() {
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
   return (
-    <div className="fixed top-0 left-0 right-0 z-[60] flex h-[5.25rem] items-center px-4 w-full pointer-events-none bg-background/80 backdrop-blur-md">
+    <div className={cn("fixed top-0 left-0 right-0 flex h-[5.25rem] items-center px-4 w-full pointer-events-none bg-background/80 backdrop-blur-md", isSearchOpen && "z-[60]")}>
       <header className="bg-sidebar relative flex h-16 w-full items-center rounded-2xl border px-4 shadow-sm overflow-hidden pointer-events-auto">
         <div
           className="absolute inset-0 pointer-events-none"
@@ -31,7 +36,11 @@ export function TopBar() {
         </div>
 
         <div className="relative z-30 ml-auto flex items-center gap-2 md:gap-4">
-          <SearchBar className="hidden md:block" />
+          <SearchBar
+            className="hidden md:block"
+            open={isSearchOpen}
+            onOpenChange={setIsSearchOpen}
+          />
           <div className="flex items-center gap-2">
             <LanguageSelector />
             <ModeToggle />

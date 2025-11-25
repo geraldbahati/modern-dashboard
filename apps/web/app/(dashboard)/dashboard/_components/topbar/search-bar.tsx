@@ -25,6 +25,8 @@ import { cn } from "@workspace/ui/lib/utils";
 
 interface SearchBarProps {
   className?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 const items = [
@@ -66,20 +68,24 @@ const items = [
   },
 ];
 
-export default function SearchBar({ className }: SearchBarProps) {
-  const [open, setOpen] = React.useState(false);
+export default function SearchBar({ className, open: controlledOpen, onOpenChange }: SearchBarProps) {
+  const [internalOpen, setInternalOpen] = React.useState(false);
   const [selectedIndex, setSelectedIndex] = React.useState(0);
+
+  // Use controlled state if provided, otherwise use internal state
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = onOpenChange || setInternalOpen;
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        setOpen((open) => !open);
+        setOpen(!open);
       }
     };
     document.addEventListener("keydown", down);
     return () => document.removeEventListener("keydown", down);
-  }, []);
+  }, [open, setOpen]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") {
