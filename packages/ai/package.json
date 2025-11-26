@@ -1,0 +1,27 @@
+{
+  "name": "@workspace/ai",
+  "version": "0.0.0",
+  "private": true,
+  "description": "AI SDK integration for analytics dashboard with generative UI",
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@openrouter/ai-sdk-provider": "^0.0.5",
+    "ai": "^4.0.38",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.9",
+    "@types/react": "^19.0.6",
+    "@workspace/typescript-config": "workspace:*",
+    "react": "^19.0.0",
+    "typescript": "^5.9.2"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./actions": "./src/actions/chat.tsx",
+    "./tools": "./src/tools/index.ts",
+    "./provider": "./src/lib/ai-provider.ts"
+  }
+}
