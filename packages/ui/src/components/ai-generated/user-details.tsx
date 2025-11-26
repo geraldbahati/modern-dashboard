@@ -47,11 +47,11 @@ interface UserDetailsProps {
     name: string;
     email: string;
     emailVerified: boolean;
-    image: string | null;
-    role: string | null;
-    banned: boolean | null;
-    banReason: string | null;
-    twoFactorEnabled: boolean | null;
+    image?: string | null;
+    role?: string | null;
+    banned?: boolean | null;
+    banReason?: string | null;
+    twoFactorEnabled?: boolean | null;
     createdAt: Date;
     updatedAt: Date;
   };
@@ -80,7 +80,7 @@ export function UserDetails({
       .toUpperCase();
   };
 
-  const getRoleBadgeVariant = (role: string | null) => {
+  const getRoleBadgeVariant = (role: string | null | undefined) => {
     switch (role?.toLowerCase()) {
       case "admin":
         return "destructive";

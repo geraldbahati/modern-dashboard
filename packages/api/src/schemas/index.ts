@@ -24,6 +24,9 @@ export const userSchema = z.object({
   emailVerified: z.boolean(),
   image: z.string().nullable().optional(),
   role: z.string().nullable().optional(),
+  banned: z.boolean().nullable().optional(),
+  banReason: z.string().nullable().optional(),
+  twoFactorEnabled: z.boolean().nullable().optional(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });

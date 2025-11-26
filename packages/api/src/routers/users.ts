@@ -2,7 +2,7 @@
  * Users router - oRPC procedures for user management
  */
 
-import { eq } from "drizzle-orm";
+import { eq, ilike, or, and, sql } from "drizzle-orm";
 import { z } from "zod";
 import { authDb } from "@workspace/db/auth-db";
 import * as schema from "@workspace/db/auth-db/schema";
@@ -17,22 +17,89 @@ import {
   idSchema,
 } from "../schemas";
 
-// List all users (admin only)
-export const list = adminProcedure
-  .input(paginationSchema)
-  .output(z.array(userSchema))
+// Enhanced list schema with filters
+const listUsersSchema = paginationSchema.extend({
+  search: z.string().optional(),
+  role: z.enum(["admin", "moderator", "editor", "user"]).optional(),
+  status: z.enum(["active", "banned", "verified", "unverified"]).optional(),
+});
+
+// List all users with search and filters (protected - any logged in user can view)
+export const list = protectedProcedure
+  .input(listUsersSchema)
+  .output(
+    z.object({
+      users: z.array(userSchema),
+      total: z.number(),
+    })
+  )
   .handler(async ({ input }) => {
+    const { limit, offset, search, role, status } = input;
+
+    // Build where conditions
+    const conditions = [];
+
+    // Search filter (name or email)
+    if (search) {
+      conditions.push(
+        or(
+          ilike(schema.user.name, `%${search}%`),
+          ilike(schema.user.email, `%${search}%`)
+        )
+      );
+    }
+
+    // Role filter
+    if (role) {
+      conditions.push(eq(schema.user.role, role));
+    }
+
+    // Status filter
+    if (status) {
+      switch (status) {
+        case "active":
+          conditions.push(eq(schema.user.banned, false));
+          break;
+        case "banned":
+          conditions.push(eq(schema.user.banned, true));
+          break;
+        case "verified":
+          conditions.push(eq(schema.user.emailVerified, true));
+          break;
+        case "unverified":
+          conditions.push(eq(schema.user.emailVerified, false));
+          break;
+      }
+    }
+
+    // Combine all conditions
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    // Execute query with pagination
     const users = await authDb
       .select()
       .from(schema.user)
-      .limit(input.limit)
-      .offset(input.offset);
+      .where(whereClause)
+      .limit(limit)
+      .offset(offset)
+      .orderBy(sql`${schema.user.createdAt} DESC`);
 
-    return users.map((u) => ({
-      ...u,
-      createdAt: u.createdAt,
-      updatedAt: u.updatedAt,
-    }));
+    // Get total count
+    const totalResult = await authDb
+      .select({ count: sql<number>`count(*)::int` })
+      .from(schema.user)
+      .where(whereClause);
+
+    const total = totalResult[0]?.count ?? 0;
+
+    return {
+      users: users.map((u) => ({
+        ...u,
+        createdAt: u.createdAt,
+        updatedAt: u.updatedAt,
+      })),
+      total,
+    };
   });
 
 // Get user by ID

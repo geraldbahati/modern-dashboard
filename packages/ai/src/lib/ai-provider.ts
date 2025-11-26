@@ -36,6 +36,11 @@ export const models = {
 
   // DeepSeek models
   "deepseek-chat": "deepseek/deepseek-chat",
+
+  // xAI models
+  "grok-beta": "x-ai/grok-beta",
+  "grok-2-vision-1212": "x-ai/grok-2-vision-1212",
+  "grok-4.1-fast": "x-ai/grok-4.1-fast:free",
 } as const;
 
 export type ModelId = keyof typeof models;
@@ -43,7 +48,9 @@ export type ModelId = keyof typeof models;
 /**
  * Get the configured AI model from OpenRouter
  */
-export function getModel(modelId: ModelId = "gpt-4o"): ReturnType<typeof openrouter.chat> {
+export function getModel(
+  modelId: ModelId = "gpt-4o"
+): ReturnType<typeof openrouter.chat> {
   const modelName = models[modelId] || models["gpt-4o"];
   return openrouter.chat(modelName);
 }

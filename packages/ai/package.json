@@ -8,8 +8,8 @@
   },
   "dependencies": {
     "@openrouter/ai-sdk-provider": "^0.0.5",
-    "ai": "^4.0.38",
-    "zod": "^3.24.1"
+    "ai": "^5.0.102",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@types/node": "^20.19.9",
@@ -20,8 +20,8 @@
   },
   "exports": {
     ".": "./src/index.ts",
-    "./actions": "./src/actions/chat.tsx",
     "./tools": "./src/tools/index.ts",
-    "./provider": "./src/lib/ai-provider.ts"
+    "./provider": "./src/lib/ai-provider.ts",
+    "./system-prompt": "./src/lib/system-prompt.ts"
   }
 }

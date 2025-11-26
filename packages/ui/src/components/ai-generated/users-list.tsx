@@ -54,10 +54,10 @@ interface User {
   name: string;
   email: string;
   emailVerified: boolean;
-  image: string | null;
-  role: string | null;
-  banned: boolean | null;
-  twoFactorEnabled: boolean | null;
+  image?: string | null;
+  role?: string | null;
+  banned?: boolean | null;
+  twoFactorEnabled?: boolean | null;
   createdAt: Date;
 }
 
@@ -102,8 +102,8 @@ export function UsersList({
       const bValue = b[sortColumn];
 
       if (aValue === bValue) return 0;
-      if (aValue === null) return 1;
-      if (bValue === null) return -1;
+      if (aValue === null || aValue === undefined) return 1;
+      if (bValue === null || bValue === undefined) return -1;
 
       if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
       if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
@@ -122,7 +122,7 @@ export function UsersList({
     }
   };
 
-  const getRoleBadgeVariant = (role: string | null) => {
+  const getRoleBadgeVariant = (role: string | null | undefined) => {
     switch (role?.toLowerCase()) {
       case "admin":
         return "destructive"; // Or a custom color if available
