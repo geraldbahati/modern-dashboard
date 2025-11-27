@@ -146,6 +146,32 @@ export const update = writeSecurityProcedure
   });
 
 /**
+ * Get a single quick task by ID
+ */
+export const getById = readSecurityProcedure
+  .input(z.object({ id: z.string().uuid() }))
+  .output(quickTaskSchema)
+  .handler(async ({ input, context }) => {
+    const [task] = await appDb
+      .select()
+      .from(quickTasks)
+      .where(
+        and(
+          eq(quickTasks.id, input.id),
+          eq(quickTasks.ownerId, context.user.id)
+        )
+      );
+
+    if (!task) {
+      throw new ORPCError("NOT_FOUND", {
+        message: "Task not found",
+      });
+    }
+
+    return toQuickTask(task);
+  });
+
+/**
  * Delete a quick task
  */
 export const remove = writeSecurityProcedure
@@ -174,11 +200,39 @@ export const remove = writeSecurityProcedure
     return { success: true };
   });
 
+/**
+ * Delete all completed quick tasks
+ */
+export const deleteCompleted = writeSecurityProcedure
+  .input(z.object({ confirm: z.boolean() }))
+  .output(z.object({ success: z.boolean(), deletedCount: z.number() }))
+  .handler(async ({ input, context }) => {
+    if (!input.confirm) {
+      throw new ORPCError("BAD_REQUEST", {
+        message: "Confirmation required to delete completed tasks",
+      });
+    }
+
+    const result = await appDb
+      .delete(quickTasks)
+      .where(
+        and(
+          eq(quickTasks.ownerId, context.user.id),
+          eq(quickTasks.completed, true)
+        )
+      )
+      .returning();
+
+    return { success: true, deletedCount: result.length };
+  });
+
 // Export router
 export const quickTasksRouter = {
   list,
+  getById,
   create,
   toggle,
   update,
   remove,
+  deleteCompleted,
 };

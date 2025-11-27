@@ -9,6 +9,9 @@ import { projectsRouter } from "./routers/projects";
 import { metricsRouter } from "./routers/metrics";
 import { quickTasksRouter } from "./routers/quick-tasks";
 import { insightsRouter } from "./routers/insights";
+import { organizationsRouter } from "./routers/organizations";
+import { tasksRouter } from "./routers/tasks";
+import { analyticsRouter } from "./routers/analytics";
 
 // Combined router - this is the source of truth for all API routes
 export const router = {
@@ -18,6 +21,9 @@ export const router = {
   metrics: metricsRouter,
   quickTasks: quickTasksRouter,
   insights: insightsRouter,
+  organizations: organizationsRouter,
+  tasks: tasksRouter,
+  analytics: analyticsRouter,
 };
 
 // Export router type for client inference

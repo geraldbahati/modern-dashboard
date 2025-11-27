@@ -9,8 +9,29 @@ import {
   unbanUserSchema,
 } from "@workspace/ai/tools";
 import type { Client } from "@workspace/api/client";
+import { createOrganizationTools } from "./tools/organization-tools";
+import { createProjectTools } from "./tools/project-tools";
+import { createTaskTools } from "./tools/task-tools";
+import { createQuickTaskTools } from "./tools/quick-task-tools";
+import { createAnalyticsTools } from "./tools/analytics-tools";
 
 export const createTools = (client: Client) => ({
+  // Spread analytics tools (high priority)
+  ...createAnalyticsTools(client),
+
+  // Spread organization tools
+  ...createOrganizationTools(client),
+
+  // Spread project tools
+  ...createProjectTools(client),
+
+  // Spread task tools
+  ...createTaskTools(client),
+
+  // Spread quick task tools
+  ...createQuickTaskTools(client),
+
+  // User tools below
   // LIST USERS
   listUsers: tool({
     description:

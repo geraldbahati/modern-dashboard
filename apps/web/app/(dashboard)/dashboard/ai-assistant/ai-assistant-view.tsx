@@ -6,6 +6,7 @@ import {
   ConversationContent,
   ConversationEmptyState,
   ConversationScrollButton,
+  useStickToBottomContext,
 } from "@workspace/ui/components/ai-elements/conversation";
 import {
   Reasoning,
@@ -54,6 +55,11 @@ import { useChat } from "@ai-sdk/react";
 import type { UIMessage } from "ai";
 import { getToolComponent } from "./registry";
 import "./tools/user-tools"; // Register tools
+import "./tools/organization-tools"; // Register organization tools
+import "./tools/project-tools"; // Register project tools
+import "./tools/task-tools"; // Register task tools
+import "./tools/quick-task-tools"; // Register quick task tools
+import "./tools/analytics-tools"; // Register analytics tools
 
 const Spline = dynamic(() => import("@splinetool/react-spline"), {
   ssr: false,
@@ -248,6 +254,7 @@ export function AiAssistantView() {
         className="[mask-image:radial-gradient(600px_circle_at_center,white,transparent)] opacity-50 pointer-events-none"
       />
       <Conversation className="z-10 w-full mx-auto pt-16">
+        <ScrollManager messages={messages} />
         {messages.length === 0 ? (
           <ConversationEmptyState
             title=""
@@ -423,6 +430,42 @@ export function AiAssistantView() {
       </div>
     </div>
   );
+}
+
+function ScrollManager({ messages }: { messages: UIMessage[] }) {
+  const { scrollToBottom, isAtBottom } = useStickToBottomContext();
+  const prevMessagesLength = useRef(messages.length);
+
+  useEffect(() => {
+    // Scroll to bottom on initial load
+    scrollToBottom();
+  }, [scrollToBottom]);
+
+  useEffect(() => {
+    const length = messages.length;
+    const prevLength = prevMessagesLength.current;
+    const lastMessage = messages[length - 1];
+
+    if (length > prevLength) {
+      // New message added
+      if (lastMessage?.role === "user") {
+        // Always scroll to bottom for new user messages
+        scrollToBottom();
+      } else if (isAtBottom) {
+        // For new AI messages, scroll if we were already at the bottom
+        scrollToBottom();
+      }
+    } else {
+      // Existing message updated (streaming)
+      if (isAtBottom) {
+        scrollToBottom();
+      }
+    }
+
+    prevMessagesLength.current = length;
+  }, [messages, scrollToBottom, isAtBottom]);
+
+  return null;
 }
 
 function CustomAttachments() {

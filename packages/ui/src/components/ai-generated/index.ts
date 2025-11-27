@@ -13,3 +13,5 @@ export * from "./action-confirmation";
 export * from "./predictive-analytics";
 export * from "./resource-allocation";
 export * from "./risk-assessment";
+export * from "./organizations-list";
+export * from "./organization-details";

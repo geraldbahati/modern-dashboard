@@ -254,6 +254,80 @@ export const hardDelete = heavyWriteSecurityProcedure
     return { success: true };
   });
 
+/**
+ * Archive a project
+ */
+export const archive = writeSecurityProcedure
+  .route({ method: "PATCH", path: "/projects/{id}/archive" })
+  .input(z.object({ id: z.string().uuid() }))
+  .output(projectSchema)
+  .handler(async ({ input, context }) => {
+    // Verify ownership
+    const [existing] = await appDb
+      .select()
+      .from(projects)
+      .where(
+        and(eq(projects.id, input.id), eq(projects.ownerId, context.user.id))
+      );
+
+    if (!existing) {
+      throw new ORPCError("NOT_FOUND", {
+        message: "Project not found",
+      });
+    }
+
+    const [updated] = await appDb
+      .update(projects)
+      .set({ status: "archived" })
+      .where(eq(projects.id, input.id))
+      .returning();
+
+    if (!updated) {
+      throw new ORPCError("INTERNAL_SERVER_ERROR", {
+        message: "Failed to archive project",
+      });
+    }
+
+    return toProject(updated);
+  });
+
+/**
+ * Restore a project from archived or deleted status
+ */
+export const restore = writeSecurityProcedure
+  .route({ method: "PATCH", path: "/projects/{id}/restore" })
+  .input(z.object({ id: z.string().uuid() }))
+  .output(projectSchema)
+  .handler(async ({ input, context }) => {
+    // Verify ownership
+    const [existing] = await appDb
+      .select()
+      .from(projects)
+      .where(
+        and(eq(projects.id, input.id), eq(projects.ownerId, context.user.id))
+      );
+
+    if (!existing) {
+      throw new ORPCError("NOT_FOUND", {
+        message: "Project not found",
+      });
+    }
+
+    const [updated] = await appDb
+      .update(projects)
+      .set({ status: "active" })
+      .where(eq(projects.id, input.id))
+      .returning();
+
+    if (!updated) {
+      throw new ORPCError("INTERNAL_SERVER_ERROR", {
+        message: "Failed to restore project",
+      });
+    }
+
+    return toProject(updated);
+  });
+
 // Export router
 export const projectsRouter = {
   list,
@@ -263,4 +337,6 @@ export const projectsRouter = {
   update,
   remove,
   hardDelete,
+  archive,
+  restore,
 };
