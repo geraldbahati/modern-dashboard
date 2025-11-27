@@ -52,8 +52,8 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import type { UIMessage } from "ai";
-import { UsersList } from "@workspace/ui/components/ai-generated/users-list";
-import { UserDetails } from "@workspace/ui/components/ai-generated/user-details";
+import { getToolComponent } from "./registry";
+import "./tools/user-tools"; // Register tools
 
 const Spline = dynamic(() => import("@splinetool/react-spline"), {
   ssr: false,
@@ -313,21 +313,56 @@ export function AiAssistantView() {
                               />
                             </ToolContent>
                           </Tool>
-                          {toolName === "listUsers" &&
-                            toolPart.state === "output-available" && (
-                              <UsersList
-                                users={toolPart.output?.data || []}
-                                total={toolPart.output?.count}
-                                onUserClick={() => {}}
-                              />
-                            )}
-                          {toolName === "getUserById" &&
-                            toolPart.state === "output-available" && (
-                              <UserDetails
-                                user={toolPart.output?.data}
-                                onAction={() => {}}
-                              />
-                            )}
+                          {(() => {
+                            const ToolComponent = getToolComponent(toolName);
+                            if (
+                              ToolComponent &&
+                              toolPart.state === "output-available"
+                            ) {
+                              return (
+                                <ToolComponent
+                                  tool={toolPart}
+                                  result={toolPart.output}
+                                  onAction={(action: string, data: any) => {
+                                    let prompt = "";
+                                    if (
+                                      toolName === "listUsers" &&
+                                      action === "viewDetails"
+                                    ) {
+                                      prompt = `Show details for user ${data}`;
+                                    } else if (toolName === "getUserById") {
+                                      switch (action) {
+                                        case "edit":
+                                          prompt = `I want to edit user ${data}`;
+                                          break;
+                                        case "ban":
+                                          prompt = `Ban user ${data}`;
+                                          break;
+                                        case "delete":
+                                          prompt = `Delete user ${data}`;
+                                          break;
+                                      }
+                                    }
+
+                                    if (prompt) {
+                                      sendMessage(
+                                        {
+                                          role: "user",
+                                          parts: [
+                                            { type: "text", text: prompt },
+                                          ],
+                                        },
+                                        {
+                                          body: { model: selectedModel },
+                                        }
+                                      );
+                                    }
+                                  }}
+                                />
+                              );
+                            }
+                            return null;
+                          })()}
                         </div>
                       );
                     }
