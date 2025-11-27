@@ -7,7 +7,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@openrouter/ai-sdk-provider": "^0.0.5",
+    "@openrouter/ai-sdk-provider": "^1.2.7",
     "ai": "^5.0.102",
     "zod": "^4.1.12"
   },

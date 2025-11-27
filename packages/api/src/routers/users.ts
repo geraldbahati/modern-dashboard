@@ -168,12 +168,139 @@ export const updateRole = adminProcedure
     };
   });
 
-// Delete user (admin only)
-export const deleteUser = adminProcedure
+// Create user (admin only)
+export const createUser = adminProcedure
+  .input(
+    z.object({
+      name: z.string().min(1),
+      email: z.string().email(),
+      role: z.enum(["admin", "moderator", "editor", "user"]).default("user"),
+      image: z.string().url().optional(),
+    })
+  )
+  .output(userSchema)
+  .handler(async ({ input }) => {
+    const [newUser] = await authDb
+      .insert(schema.user)
+      .values({
+        id: crypto.randomUUID(),
+        name: input.name,
+        email: input.email,
+        role: input.role,
+        image: input.image,
+        emailVerified: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+
+    if (!newUser) {
+      throw new Error("Failed to create user");
+    }
+
+    return {
+      ...newUser,
+      createdAt: newUser.createdAt,
+      updatedAt: newUser.updatedAt,
+    };
+  });
+
+// Update user (admin only)
+export const updateUser = adminProcedure
+  .input(
+    z.object({
+      userId: z.string(),
+      name: z.string().min(1).optional(),
+      email: z.string().email().optional(),
+      image: z.string().url().optional(),
+      role: z.enum(["admin", "moderator", "editor", "user"]).optional(),
+    })
+  )
+  .output(userSchema)
+  .handler(async ({ input }) => {
+    const { userId, ...updates } = input;
+
+    const [updated] = await authDb
+      .update(schema.user)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(schema.user.id, userId))
+      .returning();
+
+    if (!updated) {
+      throw new Error("User not found");
+    }
+
+    return {
+      ...updated,
+      createdAt: updated.createdAt,
+      updatedAt: updated.updatedAt,
+    };
+  });
+
+// Ban user (admin only)
+export const banUser = adminProcedure
+  .input(
+    z.object({
+      userId: z.string(),
+      reason: z.string(),
+      expiresAt: z.string().optional(),
+    })
+  )
+  .output(z.object({ success: z.boolean() }))
+  .handler(async ({ input }) => {
+    await authDb
+      .update(schema.user)
+      .set({
+        banned: true,
+        banReason: input.reason,
+        updatedAt: new Date(),
+      })
+      .where(eq(schema.user.id, input.userId));
+
+    return { success: true };
+  });
+
+// Unban user (admin only)
+export const unbanUser = adminProcedure
   .input(idSchema)
   .output(z.object({ success: z.boolean() }))
   .handler(async ({ input }) => {
-    await authDb.delete(schema.user).where(eq(schema.user.id, input.id));
+    await authDb
+      .update(schema.user)
+      .set({
+        banned: false,
+        banReason: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(schema.user.id, input.id));
+
+    return { success: true };
+  });
+
+// Delete user (admin only)
+export const deleteUser = adminProcedure
+  .input(
+    z.object({
+      userId: z.string(),
+      permanent: z.boolean().default(false),
+    })
+  )
+  .output(z.object({ success: z.boolean() }))
+  .handler(async ({ input }) => {
+    if (input.permanent) {
+      // Permanent delete
+      await authDb.delete(schema.user).where(eq(schema.user.id, input.userId));
+    } else {
+      // Soft delete (ban)
+      await authDb
+        .update(schema.user)
+        .set({
+          banned: true,
+          banReason: "Soft deleted",
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.user.id, input.userId));
+    }
     return { success: true };
   });
 
@@ -182,6 +309,10 @@ export const usersRouter = {
   list,
   getById,
   me,
+  create: createUser,
+  update: updateUser,
   updateRole,
+  ban: banUser,
+  unban: unbanUser,
   delete: deleteUser,
 };

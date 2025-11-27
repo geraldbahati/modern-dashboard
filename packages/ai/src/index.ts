@@ -3,9 +3,6 @@
  * AI SDK integration for the analytics dashboard
  */
 
-// Export server actions
-export * from "./actions/chat";
-
 // Export tool schemas and types
 export * from "./tools";
 

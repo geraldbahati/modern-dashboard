@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@ai-sdk/react": "^2.0.102",
+    "@ai-sdk/rsc": "^1.0.103",
     "@hookform/resolvers": "^5.2.2",
     "@orpc/client": "^1.0.0",
     "@orpc/tanstack-query": "^1.11.3",

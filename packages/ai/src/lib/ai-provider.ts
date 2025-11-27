@@ -45,13 +45,18 @@ export const models = {
 
 export type ModelId = keyof typeof models;
 
+type AISDKModel = ReturnType<typeof openrouter.chat>;
+
 /**
  * Get the configured AI model from OpenRouter
+ * Returns the OpenRouter chat model instance compatible with AI SDK
+ *
+ * Note: OpenRouter models are functionally compatible with AI SDK functions
+ * like streamUI, streamText, etc. The provider uses v1 specification but
+ * works correctly with v2 functions at runtime.
  */
-export function getModel(
-  modelId: ModelId = "gpt-4o"
-): ReturnType<typeof openrouter.chat> {
-  const modelName = models[modelId] || models["gpt-4o"];
+export function getModel(modelId: ModelId = "grok-4.1-fast"): AISDKModel {
+  const modelName = models[modelId] || models["grok-4.1-fast"];
   return openrouter.chat(modelName);
 }
 

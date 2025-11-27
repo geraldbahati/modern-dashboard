@@ -10,7 +10,6 @@ import {
 import {
   Message,
   MessageContent,
-  MessageResponse,
 } from "@workspace/ui/components/ai-elements/message";
 import {
   PromptInput,
@@ -18,38 +17,30 @@ import {
   PromptInputActionMenu,
   PromptInputActionMenuContent,
   PromptInputActionMenuTrigger,
-  PromptInputAttachment,
-  PromptInputAttachments,
-  PromptInputBody,
-  PromptInputButton,
-  PromptInputFooter,
-  PromptInputHeader,
   type PromptInputMessage,
-  PromptInputSelect,
-  PromptInputSelectContent,
-  PromptInputSelectItem,
-  PromptInputSelectTrigger,
-  PromptInputSelectValue,
   PromptInputSpeechButton,
   PromptInputSubmit,
   PromptInputTextarea,
-  PromptInputTools,
   PromptInputProvider,
   usePromptInputAttachments,
 } from "@workspace/ui/components/ai-elements/prompt-input";
 import { GridPattern } from "@workspace/ui/components/grid-pattern";
-import { ArrowUpIcon, GlobeIcon, PlusIcon, XIcon } from "lucide-react";
+import { ArrowUpIcon, PlusIcon, XIcon } from "lucide-react";
 import Image from "next/image";
 import { useIsMobile } from "@workspace/ui/hooks/use-mobile";
 import { AiHeader } from "./_components/ai-header";
 import {
   addMessageToConversation,
-  Conversation as HistoryConversation,
+  type Conversation as HistoryConversation,
   createConversation,
   getConversation,
   getHistory,
 } from "./_data/mock-history";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useChat } from "@ai-sdk/react";
+import type { UIMessage } from "ai";
+import { UsersList } from "@workspace/ui/components/ai-generated/users-list";
+import { UserDetails } from "@workspace/ui/components/ai-generated/user-details";
 
 const Spline = dynamic(() => import("@splinetool/react-spline"), {
   ssr: false,
@@ -65,18 +56,15 @@ interface SplineApp {
 }
 
 const models = [
+  { id: "grok-4.1-fast", name: "Grok 4.1 Fast" },
   { id: "gpt-4o", name: "GPT-4o" },
   { id: "claude-opus-4-20250514", name: "Claude 4 Opus" },
 ];
 
 export function AiAssistantView() {
   const isMobile = useIsMobile();
-  const [messages, setMessages] = useState<
-    { id: string; role: "user" | "assistant"; content: string }[]
-  >([]);
   const [text, setText] = useState<string>("");
-  const [model, setModel] = useState<string>(models[0].id);
-  const [useWebSearch, setUseWebSearch] = useState<boolean>(false);
+  const [selectedModel, setSelectedModel] = useState<string>(models[0].id);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // History state
@@ -84,21 +72,26 @@ export function AiAssistantView() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [currentConversationId, setCurrentConversationId] = useState<string>();
 
+  // Use AI SDK UI hook
+  const { messages, sendMessage, status } = useChat<UIMessage>({
+    id: "ai-assistant-chat",
+    messages: [] as UIMessage[],
+  });
+
   useEffect(() => {
     getHistory().then(setHistory);
   }, []);
 
   const handleNewChat = useCallback(() => {
-    setMessages([]);
     setText("");
     setCurrentConversationId(undefined);
     setHistoryOpen(false);
+    // Note: useChat doesn't expose a clear method, would need to reload page or manage manually
   }, []);
 
   const handleSelectConversation = useCallback(async (id: string) => {
     const conversation = await getConversation(id);
     if (conversation) {
-      setMessages(conversation.messages);
       setCurrentConversationId(id);
       setHistoryOpen(false);
     }
@@ -111,18 +104,27 @@ export function AiAssistantView() {
 
       if (!hasText && !hasAttachments) return;
 
-      const userMsg = {
-        id: Date.now().toString(),
-        role: "user" as const,
-        content: message.text,
-      };
-
-      setMessages((prev) => [...prev, userMsg]);
       setText("");
 
-      let conversationId = currentConversationId;
+      // Send message using AI SDK UI v5
+      await sendMessage(
+        {
+          role: "user",
+          parts: [
+            {
+              type: "text",
+              text: message.text,
+            },
+          ],
+        },
+        {
+          body: { model: selectedModel },
+        }
+      );
 
+      // Save to conversation history
       try {
+        let conversationId = currentConversationId;
         if (!conversationId) {
           const newConv = await createConversation(message.text);
           conversationId = newConv.id;
@@ -133,38 +135,12 @@ export function AiAssistantView() {
             content: message.text,
           });
         }
-        // Refresh history to show new/updated conversation
         getHistory().then(setHistory);
       } catch (error) {
         console.error("Failed to save message", error);
       }
-
-      // Simulate response
-      setTimeout(async () => {
-        const responseText = "I am a demo AI assistant. How can I help you?";
-
-        if (conversationId) {
-          try {
-            await addMessageToConversation(conversationId, {
-              role: "assistant",
-              content: responseText,
-            });
-          } catch (error) {
-            console.error("Failed to save assistant message", error);
-          }
-        }
-
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: (Date.now() + 1).toString(),
-            role: "assistant",
-            content: responseText,
-          },
-        ]);
-      }, 1000);
     },
-    [currentConversationId]
+    [currentConversationId, sendMessage, selectedModel]
   );
 
   const onLoad = useCallback(
@@ -216,8 +192,8 @@ export function AiAssistantView() {
   return (
     <div className="flex h-[calc(100vh-7.5rem)] flex-col relative overflow-hidden rounded-xl border bg-background shadow-sm">
       <AiHeader
-        selectedModel={model}
-        onModelChange={setModel}
+        selectedModel={selectedModel}
+        onModelChange={setSelectedModel}
         models={models}
         onNewChat={handleNewChat}
         history={history}
@@ -275,11 +251,125 @@ export function AiAssistantView() {
             {messages.map((msg) => (
               <Message key={msg.id} from={msg.role}>
                 <MessageContent>
-                  {msg.role === "assistant" ? (
-                    <MessageResponse>{msg.content}</MessageResponse>
-                  ) : (
-                    msg.content
-                  )}
+                  {msg.parts.map((part, partIndex) => {
+                    // Render text parts
+                    if (part.type === "text") {
+                      return <span key={partIndex}>{part.text}</span>;
+                    }
+
+                    // Render tool invocations (type starts with 'tool-')
+                    if (part.type.startsWith("tool-")) {
+                      const toolPart = part as {
+                        type: string;
+                        toolCallId: string;
+                        toolName: string;
+                        state:
+                          | "input-streaming"
+                          | "input-available"
+                          | "output-available"
+                          | "output-error";
+                        input: unknown;
+                        output?: unknown;
+                        errorText?: string;
+                      };
+
+                      // Render loading state
+                      if (
+                        toolPart.state === "input-streaming" ||
+                        toolPart.state === "input-available"
+                      ) {
+                        return (
+                          <div
+                            key={partIndex}
+                            className="flex items-center gap-2 text-muted-foreground mt-2"
+                          >
+                            <div className="h-4 w-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
+                            <span>Loading {toolPart.toolName}...</span>
+                          </div>
+                        );
+                      }
+
+                      // Render error state
+                      if (toolPart.state === "output-error") {
+                        return (
+                          <div
+                            key={partIndex}
+                            className="border border-red-200 bg-red-50 rounded-lg p-3 mt-2"
+                          >
+                            <p className="text-red-900 text-sm">
+                              Error: {toolPart.errorText}
+                            </p>
+                          </div>
+                        );
+                      }
+
+                      // Render tool result
+                      if (toolPart.state === "output-available") {
+                        const result = toolPart.output as {
+                          success: boolean;
+                          data?: unknown;
+                          count?: number;
+                          message?: string;
+                          error?: string;
+                        };
+
+                        // Handle errors in result
+                        if (!result.success) {
+                          return (
+                            <div
+                              key={partIndex}
+                              className="border border-red-200 bg-red-50 rounded-lg p-3 mt-2"
+                            >
+                              <p className="text-red-900 text-sm">
+                                Error: {result.error}
+                              </p>
+                            </div>
+                          );
+                        }
+
+                        // Render UsersList component
+                        if (toolPart.toolName === "listUsers") {
+                          return (
+                            <div key={partIndex} className="mt-2">
+                              <UsersList
+                                users={(result.data as any) || []}
+                                total={result.count}
+                                onUserClick={() => {}}
+                              />
+                            </div>
+                          );
+                        }
+
+                        // Render UserDetails component
+                        if (toolPart.toolName === "getUserById") {
+                          return (
+                            <div key={partIndex} className="mt-2">
+                              <UserDetails
+                                user={result.data as any}
+                                onAction={() => {}}
+                              />
+                            </div>
+                          );
+                        }
+
+                        // Render success messages for other tools
+                        if (result.message) {
+                          return (
+                            <div
+                              key={partIndex}
+                              className="border border-green-200 bg-green-50 rounded-lg p-3 mt-2"
+                            >
+                              <p className="text-green-900 text-sm">
+                                {result.message}
+                              </p>
+                            </div>
+                          );
+                        }
+                      }
+                    }
+
+                    return null;
+                  })}
                 </MessageContent>
               </Message>
             ))}
@@ -322,7 +412,7 @@ export function AiAssistantView() {
                   className="rounded-full w-8 h-8 p-0 hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
                 />
                 <PromptInputSubmit
-                  disabled={!text}
+                  disabled={!text || status === "streaming"}
                   className="rounded-full w-10 h-10 p-0 bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <ArrowUpIcon className="w-5 h-5" />
