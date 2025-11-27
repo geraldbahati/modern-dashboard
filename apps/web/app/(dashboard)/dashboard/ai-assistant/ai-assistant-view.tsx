@@ -10,6 +10,7 @@ import {
 import {
   Message,
   MessageContent,
+  MessageResponse,
 } from "@workspace/ui/components/ai-elements/message";
 import {
   PromptInput,
@@ -254,15 +255,19 @@ export function AiAssistantView() {
                   {msg.parts.map((part, partIndex) => {
                     // Render text parts
                     if (part.type === "text") {
-                      return <span key={partIndex}>{part.text}</span>;
+                      return (
+                        <MessageResponse key={partIndex}>
+                          {part.text}
+                        </MessageResponse>
+                      );
                     }
 
                     // Render tool invocations (type starts with 'tool-')
                     if (part.type.startsWith("tool-")) {
+                      const toolName = part.type.slice(5);
                       const toolPart = part as {
                         type: string;
                         toolCallId: string;
-                        toolName: string;
                         state:
                           | "input-streaming"
                           | "input-available"
@@ -284,7 +289,7 @@ export function AiAssistantView() {
                             className="flex items-center gap-2 text-muted-foreground mt-2"
                           >
                             <div className="h-4 w-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
-                            <span>Loading {toolPart.toolName}...</span>
+                            <span>Loading {toolName}...</span>
                           </div>
                         );
                       }
@@ -328,7 +333,7 @@ export function AiAssistantView() {
                         }
 
                         // Render UsersList component
-                        if (toolPart.toolName === "listUsers") {
+                        if (toolName === "listUsers") {
                           return (
                             <div key={partIndex} className="mt-2">
                               <UsersList
@@ -341,7 +346,7 @@ export function AiAssistantView() {
                         }
 
                         // Render UserDetails component
-                        if (toolPart.toolName === "getUserById") {
+                        if (toolName === "getUserById") {
                           return (
                             <div key={partIndex} className="mt-2">
                               <UserDetails
