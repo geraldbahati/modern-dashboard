@@ -3,6 +3,7 @@ import {
   tool,
   type ModelMessage,
   convertToModelMessages,
+  stepCountIs,
 } from "ai";
 import { getModel, type ModelId, systemPrompt } from "@workspace/ai";
 import { auth } from "@workspace/auth/next";
@@ -62,6 +63,7 @@ export async function POST(req: Request) {
       model: getModel(modelId),
       system: systemPrompt,
       messages: coreMessages,
+      stopWhen: stepCountIs(5),
       providerOptions: {
         openrouter: {
           include_reasoning: true,

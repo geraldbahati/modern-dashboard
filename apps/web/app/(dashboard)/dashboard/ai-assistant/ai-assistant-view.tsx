@@ -13,6 +13,13 @@ import {
   ReasoningTrigger,
 } from "@workspace/ui/components/ai-elements/reasoning";
 import {
+  Tool,
+  ToolContent,
+  ToolHeader,
+  ToolInput,
+  ToolOutput,
+} from "@workspace/ui/components/ai-elements/tool";
+import {
   Message,
   MessageContent,
   MessageResponse,
@@ -289,112 +296,40 @@ export function AiAssistantView() {
                     // Render tool invocations (type starts with 'tool-')
                     if (part.type.startsWith("tool-")) {
                       const toolName = part.type.slice(5);
-                      const toolPart = part as {
-                        type: string;
-                        toolCallId: string;
-                        state:
-                          | "input-streaming"
-                          | "input-available"
-                          | "output-available"
-                          | "output-error";
-                        input: unknown;
-                        output?: unknown;
-                        errorText?: string;
-                      };
+                      const toolPart = part as any;
 
-                      // Render loading state
-                      if (
-                        toolPart.state === "input-streaming" ||
-                        toolPart.state === "input-available"
-                      ) {
-                        return (
-                          <div
-                            key={partIndex}
-                            className="flex items-center gap-2 text-muted-foreground mt-2"
-                          >
-                            <div className="h-4 w-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
-                            <span>Loading {toolName}...</span>
-                          </div>
-                        );
-                      }
-
-                      // Render error state
-                      if (toolPart.state === "output-error") {
-                        return (
-                          <div
-                            key={partIndex}
-                            className="border border-red-200 bg-red-50 rounded-lg p-3 mt-2"
-                          >
-                            <p className="text-red-900 text-sm">
-                              Error: {toolPart.errorText}
-                            </p>
-                          </div>
-                        );
-                      }
-
-                      // Render tool result
-                      if (toolPart.state === "output-available") {
-                        const result = toolPart.output as {
-                          success: boolean;
-                          data?: unknown;
-                          count?: number;
-                          message?: string;
-                          error?: string;
-                        };
-
-                        // Handle errors in result
-                        if (!result.success) {
-                          return (
-                            <div
-                              key={partIndex}
-                              className="border border-red-200 bg-red-50 rounded-lg p-3 mt-2"
-                            >
-                              <p className="text-red-900 text-sm">
-                                Error: {result.error}
-                              </p>
-                            </div>
-                          );
-                        }
-
-                        // Render UsersList component
-                        if (toolName === "listUsers") {
-                          return (
-                            <div key={partIndex} className="mt-2">
+                      return (
+                        <div key={partIndex} className="flex flex-col gap-2">
+                          <Tool defaultOpen={false}>
+                            <ToolHeader
+                              type={toolPart.type}
+                              state={toolPart.state}
+                            />
+                            <ToolContent>
+                              <ToolInput input={toolPart.input} />
+                              <ToolOutput
+                                output={toolPart.output}
+                                errorText={toolPart.errorText}
+                              />
+                            </ToolContent>
+                          </Tool>
+                          {toolName === "listUsers" &&
+                            toolPart.state === "output-available" && (
                               <UsersList
-                                users={(result.data as any) || []}
-                                total={result.count}
+                                users={toolPart.output?.data || []}
+                                total={toolPart.output?.count}
                                 onUserClick={() => {}}
                               />
-                            </div>
-                          );
-                        }
-
-                        // Render UserDetails component
-                        if (toolName === "getUserById") {
-                          return (
-                            <div key={partIndex} className="mt-2">
+                            )}
+                          {toolName === "getUserById" &&
+                            toolPart.state === "output-available" && (
                               <UserDetails
-                                user={result.data as any}
+                                user={toolPart.output?.data}
                                 onAction={() => {}}
                               />
-                            </div>
-                          );
-                        }
-
-                        // Render success messages for other tools
-                        if (result.message) {
-                          return (
-                            <div
-                              key={partIndex}
-                              className="border border-green-200 bg-green-50 rounded-lg p-3 mt-2"
-                            >
-                              <p className="text-green-900 text-sm">
-                                {result.message}
-                              </p>
-                            </div>
-                          );
-                        }
-                      }
+                            )}
+                        </div>
+                      );
                     }
 
                     return null;

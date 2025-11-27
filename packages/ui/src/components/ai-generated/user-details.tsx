@@ -71,6 +71,8 @@ export function UserDetails({
   onAction,
   className,
 }: UserDetailsProps) {
+  if (!user) return null;
+
   const getInitials = (name: string) => {
     return name
       .split(" ")
