@@ -36,6 +36,7 @@ export const models = {
 
   // DeepSeek models
   "deepseek-chat": "deepseek/deepseek-chat",
+  "deepseek-r1": "deepseek/deepseek-r1",
 
   // xAI models
   "grok-beta": "x-ai/grok-beta",

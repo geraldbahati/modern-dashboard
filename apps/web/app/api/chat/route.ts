@@ -62,6 +62,31 @@ export async function POST(req: Request) {
       model: getModel(modelId),
       system: systemPrompt,
       messages: coreMessages,
+      providerOptions: {
+        openrouter: {
+          include_reasoning: true,
+        },
+      },
+      onStepFinish: async ({
+        text,
+        toolCalls,
+        toolResults,
+        finishReason,
+        usage,
+        reasoning,
+      }) => {
+        console.log("Step finished:", {
+          text,
+          toolCalls,
+          toolResults,
+          finishReason,
+          usage,
+          reasoning,
+        });
+      },
+      onFinish: async ({ text, finishReason, usage }) => {
+        console.log("Stream finished:", { text, finishReason, usage });
+      },
       tools: {
         // LIST USERS
         listUsers: tool({
@@ -236,7 +261,7 @@ export async function POST(req: Request) {
       },
     });
 
-    return result.toUIMessageStreamResponse();
+    return result.toUIMessageStreamResponse({ sendReasoning: true });
   } catch (error) {
     console.error("Chat API error:", error);
     return new Response(

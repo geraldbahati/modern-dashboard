@@ -8,6 +8,11 @@ import {
   ConversationScrollButton,
 } from "@workspace/ui/components/ai-elements/conversation";
 import {
+  Reasoning,
+  ReasoningContent,
+  ReasoningTrigger,
+} from "@workspace/ui/components/ai-elements/reasoning";
+import {
   Message,
   MessageContent,
   MessageResponse,
@@ -60,6 +65,7 @@ const models = [
   { id: "grok-4.1-fast", name: "Grok 4.1 Fast" },
   { id: "gpt-4o", name: "GPT-4o" },
   { id: "claude-opus-4-20250514", name: "Claude 4 Opus" },
+  { id: "deepseek-r1", name: "DeepSeek R1" },
 ];
 
 export function AiAssistantView() {
@@ -234,7 +240,7 @@ export function AiAssistantView() {
         strokeDasharray={"4 2"}
         className="[mask-image:radial-gradient(600px_circle_at_center,white,transparent)] opacity-50 pointer-events-none"
       />
-      <Conversation className="z-10 w-full max-w-4xl mx-auto pointer-events-none pt-16">
+      <Conversation className="z-10 w-full mx-auto pt-16">
         {messages.length === 0 ? (
           <ConversationEmptyState
             title=""
@@ -248,7 +254,7 @@ export function AiAssistantView() {
             </div>
           </ConversationEmptyState>
         ) : (
-          <ConversationContent className="pointer-events-auto">
+          <ConversationContent className="pb-32">
             {messages.map((msg) => (
               <Message key={msg.id} from={msg.role}>
                 <MessageContent>
@@ -259,6 +265,24 @@ export function AiAssistantView() {
                         <MessageResponse key={partIndex}>
                           {part.text}
                         </MessageResponse>
+                      );
+                    }
+
+                    // Render reasoning parts
+                    if (part.type === "reasoning") {
+                      return (
+                        <Reasoning
+                          key={partIndex}
+                          className="w-full"
+                          isStreaming={
+                            status === "streaming" &&
+                            partIndex === msg.parts.length - 1 &&
+                            msg.id === messages.at(-1)?.id
+                          }
+                        >
+                          <ReasoningTrigger />
+                          <ReasoningContent>{part.text}</ReasoningContent>
+                        </Reasoning>
                       );
                     }
 

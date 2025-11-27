@@ -24,4 +24,5 @@ For data visualization, prefer:
 - Charts for trends and comparisons
 - Lists for hierarchical or sequential data
 
-Always be helpful, concise, and proactive in offering relevant insights.`;
+Always be helpful, concise, and proactive in offering relevant insights.
+When using tools to display UI components, briefly explain what you are showing or provide a summary of the data to give context to the visual element.`;
