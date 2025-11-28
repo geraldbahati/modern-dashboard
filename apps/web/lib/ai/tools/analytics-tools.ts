@@ -4,6 +4,9 @@ import {
   getUserAnalyticsSchema,
   getProjectAnalyticsSchema,
   getTaskDistributionSchema,
+  getResourceAllocationSchema,
+  getPredictiveAnalyticsSchema,
+  getUserAnalyticsDetailedSchema,
 } from "@workspace/ai/tools";
 import type { Client } from "@workspace/api/client";
 
@@ -58,31 +61,6 @@ export const createAnalyticsTools = (client: Client) => ({
     },
   }),
 
-  // USER ANALYTICS
-  getUserAnalytics: tool({
-    description:
-      "Get detailed analytics for a specific user or current user: tasks created/completed, projects owned, organizations membership, activity score (0-100), and completion rate. Useful for performance reviews, productivity tracking, and user engagement analysis.",
-    inputSchema: getUserAnalyticsSchema,
-    execute: async (params) => {
-      try {
-        const analytics = await client.analytics.getUserAnalytics(params);
-        return {
-          success: true,
-          data: analytics,
-          summary: `User Analytics (${params.period}): ${analytics.tasksCompleted}/${analytics.tasksCreated} tasks completed (${analytics.completionRate}%), ${analytics.projectsOwned} projects, ${analytics.organizationsMember} orgs, Activity Score: ${analytics.activityScore}/100`,
-        };
-      } catch (error) {
-        return {
-          success: false,
-          error:
-            error instanceof Error
-              ? error.message
-              : "Failed to fetch user analytics",
-        };
-      }
-    },
-  }),
-
   // PROJECT ANALYTICS
   getProjectAnalytics: tool({
     description:
@@ -116,7 +94,8 @@ export const createAnalyticsTools = (client: Client) => ({
     execute: async (params) => {
       try {
         const distribution = await client.analytics.getTaskDistribution(params);
-        const total = distribution.todo + distribution.inProgress + distribution.done;
+        const total =
+          distribution.todo + distribution.inProgress + distribution.done;
         return {
           success: true,
           data: distribution,
@@ -151,9 +130,101 @@ export const createAnalyticsTools = (client: Client) => ({
         return {
           success: false,
           error:
+            error instanceof Error ? error.message : "Failed to fetch insights",
+        };
+      }
+    },
+  }),
+
+  // RESOURCE ALLOCATION
+  getResourceAllocation: tool({
+    description:
+      "Get team resource allocation data showing workload distribution, skill/project distribution, and member availability status. Shows capacity vs assigned tasks, identifies overloaded members, and displays current task assignments. Perfect for team management, workload balancing, and resource planning. Use prompts like 'show team workload', 'check resource allocation', 'who is available', or 'show team capacity'.",
+    inputSchema: getResourceAllocationSchema,
+    execute: async (params) => {
+      try {
+        const allocation = await client.analytics.getResourceAllocation(params);
+        const overloaded = allocation.availability.filter(
+          (m: { status: string }) => m.status === "overloaded"
+        ).length;
+        const available = allocation.availability.filter(
+          (m: { status: string }) => m.status === "available"
+        ).length;
+        return {
+          success: true,
+          data: allocation,
+          summary: `Resource Allocation: ${allocation.workload.length} team members | ${available} available, ${overloaded} overloaded | Skills: ${allocation.projectDistribution.map((d: { subject: string }) => d.subject).join(", ")}`,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error:
             error instanceof Error
               ? error.message
-              : "Failed to fetch insights",
+              : "Failed to fetch resource allocation",
+        };
+      }
+    },
+  }),
+
+  // PREDICTIVE ANALYTICS
+  getPredictiveAnalytics: tool({
+    description:
+      "Get AI-powered predictive analytics for project completion forecasting. Includes completion date prediction with confidence intervals, risk assessment, AI-generated insights, and key impact drivers. Uses machine learning to analyze historical velocity, team capacity, and current progress. Perfect for sprint planning, deadline estimation, and risk management. Use prompts like 'predict project completion', 'forecast project timeline', 'show project predictions', or 'what's the project outlook'.",
+    inputSchema: getPredictiveAnalyticsSchema,
+    execute: async (params) => {
+      try {
+        const analytics = await client.analytics.getPredictiveAnalytics(params);
+        const completionDate = new Date(
+          analytics.summary.predictedCompletionDate
+        ).toLocaleDateString();
+        const positiveInsights = analytics.insights.filter(
+          (i: { type: string }) => i.type === "positive"
+        ).length;
+        const negativeInsights = analytics.insights.filter(
+          (i: { type: string }) => i.type === "negative"
+        ).length;
+        return {
+          success: true,
+          data: analytics,
+          summary: `Predictive Analytics (${params.forecastDays}d): Estimated completion ${completionDate} | Confidence: ${analytics.summary.confidenceScore}% | Risk: ${analytics.summary.riskLevel} | Insights: ${positiveInsights} positive, ${negativeInsights} negative`,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to fetch predictive analytics",
+        };
+      }
+    },
+  }),
+
+  // DETAILED USER ANALYTICS (with full chart data)
+  getUserAnalyticsDetailed: tool({
+    description:
+      "Get comprehensive user analytics with full visualization data including activity timeline (last 30 days), task distribution by status (pie chart), and weekly performance comparison (completed vs assigned). Provides rich metrics: total tasks, completion rate, average completion time, and efficiency score. Perfect for detailed performance reviews, productivity analysis, and user engagement tracking. Use prompts like 'show detailed user analytics', 'analyze my performance', 'show my activity charts', or 'detailed user statistics'.",
+    inputSchema: getUserAnalyticsDetailedSchema,
+    execute: async (params) => {
+      try {
+        const analytics =
+          await client.analytics.getUserAnalyticsDetailed(params);
+        const recentActivity = analytics.activity
+          .slice(-7)
+          .reduce((sum: number, d: { tasks: number }) => sum + d.tasks, 0);
+        return {
+          success: true,
+          data: analytics,
+          summary: `Detailed User Analytics (${params.period}): ${analytics.metrics.totalTasks} total tasks | ${analytics.metrics.completionRate}% completion rate | ${analytics.metrics.avgCompletionTime}h avg time | ${analytics.metrics.efficiency}% efficiency | ${recentActivity} tasks completed last 7 days`,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to fetch detailed user analytics",
         };
       }
     },

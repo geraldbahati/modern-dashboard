@@ -9,6 +9,9 @@ import {
   uncompleteQuickTaskSchema,
   deleteQuickTaskSchema,
   deleteCompletedQuickTasksSchema,
+  batchCreateQuickTasksSchema,
+  batchUpdateQuickTasksSchema,
+  batchDeleteQuickTasksSchema,
 } from "@workspace/ai/tools";
 import type { Client } from "@workspace/api/client";
 
@@ -255,6 +258,84 @@ export const createQuickTaskTools = (client: Client) => ({
             error instanceof Error
               ? error.message
               : "Failed to delete completed quick tasks",
+        };
+      }
+    },
+  }),
+
+  // BATCH CREATE QUICK TASKS
+  batchCreateQuickTasks: tool({
+    description:
+      "Create multiple quick tasks at once (up to 50 tasks). Useful for adding multiple to-do items quickly. Returns both successfully created tasks and any failures with error messages.",
+    inputSchema: batchCreateQuickTasksSchema,
+    execute: async (params) => {
+      try {
+        const result = await client.quickTasks.batchCreate(params);
+        return {
+          success: result.success,
+          created: result.created,
+          failed: result.failed,
+          message: `Created ${result.created.length} quick tasks${result.failed.length > 0 ? `, ${result.failed.length} failed` : ""}`,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to batch create quick tasks",
+        };
+      }
+    },
+  }),
+
+  // BATCH UPDATE QUICK TASKS
+  batchUpdateQuickTasks: tool({
+    description:
+      "Update multiple quick tasks at once (up to 50 tasks). Each update can modify the text and/or completion status. Returns successfully updated tasks and any failures with error messages.",
+    inputSchema: batchUpdateQuickTasksSchema,
+    execute: async (params) => {
+      try {
+        const result = await client.quickTasks.batchUpdate(params);
+        return {
+          success: result.success,
+          updated: result.updated,
+          failed: result.failed,
+          message: `Updated ${result.updated.length} quick tasks${result.failed.length > 0 ? `, ${result.failed.length} failed` : ""}`,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to batch update quick tasks",
+        };
+      }
+    },
+  }),
+
+  // BATCH DELETE QUICK TASKS
+  batchDeleteQuickTasks: tool({
+    description:
+      "Delete multiple quick tasks at once (up to 50 tasks). Returns count of successfully deleted tasks and any failures with error messages.",
+    inputSchema: batchDeleteQuickTasksSchema,
+    execute: async (params) => {
+      try {
+        const result = await client.quickTasks.batchDelete(params);
+        return {
+          success: result.success,
+          deletedCount: result.deletedCount,
+          failed: result.failed,
+          message: `Deleted ${result.deletedCount} quick tasks${result.failed.length > 0 ? `, ${result.failed.length} failed` : ""}`,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to batch delete quick tasks",
         };
       }
     },

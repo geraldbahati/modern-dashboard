@@ -48,6 +48,10 @@ interface ProjectsGridProps {
   total?: number;
   /** Callback when a project is clicked */
   onProjectClick?: (projectId: string) => void;
+  /** Callback when edit is clicked */
+  onEdit?: (projectId: string) => void;
+  /** Callback when delete is clicked */
+  onDelete?: (projectId: string) => void;
   /** Optional class name */
   className?: string;
 }
@@ -56,6 +60,8 @@ export function ProjectsGrid({
   projects,
   total,
   onProjectClick,
+  onEdit,
+  onDelete,
   className,
 }: ProjectsGridProps) {
   const getStatusColor = (status: Project["status"]) => {
@@ -163,10 +169,19 @@ export function ProjectsGrid({
                       <DropdownMenuItem
                         onClick={(e) => {
                           e.stopPropagation();
-                          // Edit handler
+                          onEdit?.(project.id);
                         }}
                       >
                         Edit Project
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete?.(project.id);
+                        }}
+                      >
+                        Delete Project
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

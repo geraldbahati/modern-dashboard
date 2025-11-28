@@ -128,6 +128,29 @@ export type CompareProjectsInput = z.infer<typeof compareProjectsSchema>;
 export type CompareTeamMembersInput = z.infer<typeof compareTeamMembersSchema>;
 export type GenerateCustomReportInput = z.infer<typeof generateCustomReportSchema>;
 
+// Resource Allocation
+export const getResourceAllocationSchema = z.object({
+  organizationId: z.string().optional().describe("Organization ID (defaults to user's active org)"),
+  projectId: z.string().uuid().optional().describe("Filter by specific project"),
+});
+
+// Predictive Analytics
+export const getPredictiveAnalyticsSchema = z.object({
+  projectId: z.string().uuid().describe("The project ID to forecast"),
+  forecastDays: z.number().min(7).max(90).default(30).describe("Number of days to forecast"),
+});
+
+// Enhanced User Analytics (with full chart data)
+export const getUserAnalyticsDetailedSchema = z.object({
+  userId: z.string().optional().describe("Specific user ID (defaults to current user)"),
+  period: z.enum(["7d", "30d", "90d"]).default("30d"),
+  includeCharts: z.boolean().default(true).describe("Include chart data (activity, distribution, performance)"),
+});
+
+export type GetResourceAllocationInput = z.infer<typeof getResourceAllocationSchema>;
+export type GetPredictiveAnalyticsInput = z.infer<typeof getPredictiveAnalyticsSchema>;
+export type GetUserAnalyticsDetailedInput = z.infer<typeof getUserAnalyticsDetailedSchema>;
+
 /**
  * Analytics data types returned by tools
  */
@@ -176,4 +199,64 @@ export interface TeamPerformanceData {
     tasksCompleted: number;
     completionRate: number;
   }>;
+}
+
+export interface ResourceAllocationData {
+  workload: {
+    name: string;
+    assigned: number;
+    capacity: number;
+    image: string | null;
+  }[];
+  projectDistribution: {
+    subject: string;
+    A: number;
+    fullMark: number;
+  }[];
+  availability: {
+    id: string;
+    name: string;
+    role: string;
+    image: string | null;
+    status: "available" | "busy" | "overloaded";
+    currentTask: string | null;
+  }[];
+}
+
+export interface PredictiveAnalyticsData {
+  forecast: {
+    date: string;
+    actual: number | null;
+    predicted: number | null;
+    lowerBound: number | null;
+    upperBound: number | null;
+  }[];
+  insights: {
+    id: string;
+    type: "positive" | "negative" | "neutral";
+    title: string;
+    description: string;
+    impact: "high" | "medium" | "low";
+  }[];
+  drivers: {
+    name: string;
+    impact: number;
+  }[];
+  summary: {
+    predictedCompletionDate: Date;
+    confidenceScore: number;
+    riskLevel: "low" | "medium" | "high";
+  };
+}
+
+export interface UserAnalyticsDetailedData {
+  activity: { date: string; tasks: number }[];
+  taskDistribution: { name: string; value: number; color: string }[];
+  performance: { week: string; completed: number; assigned: number }[];
+  metrics: {
+    totalTasks: number;
+    completionRate: number;
+    avgCompletionTime: number;
+    efficiency: number;
+  };
 }

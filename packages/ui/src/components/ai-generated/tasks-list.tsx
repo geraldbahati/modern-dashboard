@@ -90,6 +90,8 @@ interface TasksListProps {
   groupBy?: "status" | "priority" | "project" | "assignee";
   onTaskClick?: (taskId: string) => void;
   onStatusChange?: (taskId: string, newStatus: Task["status"]) => void;
+  onEdit?: (taskId: string) => void;
+  onDelete?: (taskId: string) => void;
   className?: string;
 }
 
@@ -138,9 +140,16 @@ const StatusIcon = ({ status }: { status: Task["status"] }) => {
 interface SortableTaskItemProps {
   task: Task;
   onTaskClick?: (taskId: string) => void;
+  onEdit?: (taskId: string) => void;
+  onDelete?: (taskId: string) => void;
 }
 
-function SortableTaskItem({ task, onTaskClick }: SortableTaskItemProps) {
+function SortableTaskItem({
+  task,
+  onTaskClick,
+  onEdit,
+  onDelete,
+}: SortableTaskItemProps) {
   const {
     attributes,
     listeners,
@@ -184,6 +193,47 @@ function SortableTaskItem({ task, onTaskClick }: SortableTaskItemProps) {
         <CardTitle className="text-sm font-medium leading-tight mt-2 line-clamp-2">
           {task.title}
         </CardTitle>
+        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className="h-6 w-6 p-0"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <span className="sr-only">Open menu</span>
+                <MoreHorizontal className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onTaskClick?.(task.id);
+                }}
+              >
+                View Details
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit?.(task.id);
+                }}
+              >
+                Edit Task
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete?.(task.id);
+                }}
+              >
+                Delete Task
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </CardHeader>
       <CardContent className="p-4 pt-2">
         <div className="flex items-center justify-between mt-2">
@@ -226,6 +276,8 @@ export function TasksList({
   groupBy: _groupBy = "status",
   onTaskClick,
   onStatusChange,
+  onEdit,
+  onDelete,
   className,
 }: TasksListProps) {
   const [view, setView] = React.useState<"list" | "kanban">("kanban");
@@ -463,7 +515,23 @@ export function TasksList({
                           >
                             View Details
                           </DropdownMenuItem>
-                          {/* Add more actions */}
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onEdit?.(task.id);
+                            }}
+                          >
+                            Edit Task
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDelete?.(task.id);
+                            }}
+                          >
+                            Delete Task
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -507,6 +575,8 @@ export function TasksList({
                           key={task.id}
                           task={task}
                           onTaskClick={onTaskClick}
+                          onEdit={onEdit}
+                          onDelete={onDelete}
                         />
                       ))}
                     </SortableContext>

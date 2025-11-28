@@ -226,6 +226,208 @@ export const deleteCompleted = writeSecurityProcedure
     return { success: true, deletedCount: result.length };
   });
 
+/**
+ * Batch create quick tasks
+ */
+export const batchCreate = writeSecurityProcedure
+  .route({ method: "POST", path: "/quick-tasks/batch" })
+  .input(
+    z.object({
+      tasks: z
+        .array(
+          z.object({
+            text: z.string().min(1).max(500),
+            completed: z.boolean().default(false),
+          })
+        )
+        .min(1)
+        .max(50),
+    })
+  )
+  .output(
+    z.object({
+      success: z.boolean(),
+      created: z.array(quickTaskSchema),
+      failed: z.array(
+        z.object({
+          index: z.number(),
+          error: z.string(),
+        })
+      ),
+    })
+  )
+  .handler(async ({ input, context }) => {
+    const created: typeof quickTaskSchema._type[] = [];
+    const failed: { index: number; error: string }[] = [];
+
+    for (let i = 0; i < input.tasks.length; i++) {
+      const task = input.tasks[i];
+      if (!task) continue;
+
+      try {
+        const [newTask] = await appDb
+          .insert(quickTasks)
+          .values({
+            text: task.text,
+            completed: task.completed || false,
+            ownerId: context.user.id,
+          })
+          .returning();
+
+        if (newTask) {
+          created.push(toQuickTask(newTask));
+        }
+      } catch (error) {
+        failed.push({
+          index: i,
+          error: error instanceof Error ? error.message : "Failed to create quick task",
+        });
+      }
+    }
+
+    return {
+      success: failed.length === 0,
+      created,
+      failed,
+    };
+  });
+
+/**
+ * Batch update quick tasks
+ */
+export const batchUpdate = writeSecurityProcedure
+  .route({ method: "PATCH", path: "/quick-tasks/batch" })
+  .input(
+    z.object({
+      updates: z
+        .array(
+          z.object({
+            quickTaskId: z.string().uuid(),
+            text: z.string().min(1).max(500).optional(),
+            completed: z.boolean().optional(),
+          })
+        )
+        .min(1)
+        .max(50),
+    })
+  )
+  .output(
+    z.object({
+      success: z.boolean(),
+      updated: z.array(quickTaskSchema),
+      failed: z.array(
+        z.object({
+          quickTaskId: z.string(),
+          error: z.string(),
+        })
+      ),
+    })
+  )
+  .handler(async ({ input, context }) => {
+    const updated: typeof quickTaskSchema._type[] = [];
+    const failed: { quickTaskId: string; error: string }[] = [];
+
+    for (const update of input.updates) {
+      try {
+        const { quickTaskId, ...updates } = update;
+
+        // Verify ownership
+        const [existing] = await appDb
+          .select()
+          .from(quickTasks)
+          .where(
+            and(
+              eq(quickTasks.id, quickTaskId),
+              eq(quickTasks.ownerId, context.user.id)
+            )
+          );
+
+        if (!existing) {
+          throw new Error("Quick task not found");
+        }
+
+        const [updatedTask] = await appDb
+          .update(quickTasks)
+          .set(updates)
+          .where(eq(quickTasks.id, quickTaskId))
+          .returning();
+
+        if (updatedTask) {
+          updated.push(toQuickTask(updatedTask));
+        }
+      } catch (error) {
+        failed.push({
+          quickTaskId: update.quickTaskId,
+          error: error instanceof Error ? error.message : "Failed to update quick task",
+        });
+      }
+    }
+
+    return {
+      success: failed.length === 0,
+      updated,
+      failed,
+    };
+  });
+
+/**
+ * Batch delete quick tasks
+ */
+export const batchDelete = writeSecurityProcedure
+  .route({ method: "DELETE", path: "/quick-tasks/batch" })
+  .input(
+    z.object({
+      quickTaskIds: z.array(z.string().uuid()).min(1).max(50),
+    })
+  )
+  .output(
+    z.object({
+      success: z.boolean(),
+      deletedCount: z.number(),
+      failed: z.array(
+        z.object({
+          quickTaskId: z.string(),
+          error: z.string(),
+        })
+      ),
+    })
+  )
+  .handler(async ({ input, context }) => {
+    const failed: { quickTaskId: string; error: string }[] = [];
+    let deletedCount = 0;
+
+    for (const quickTaskId of input.quickTaskIds) {
+      try {
+        const result = await appDb
+          .delete(quickTasks)
+          .where(
+            and(
+              eq(quickTasks.id, quickTaskId),
+              eq(quickTasks.ownerId, context.user.id)
+            )
+          )
+          .returning();
+
+        if (result.length > 0) {
+          deletedCount++;
+        } else {
+          throw new Error("Quick task not found");
+        }
+      } catch (error) {
+        failed.push({
+          quickTaskId,
+          error: error instanceof Error ? error.message : "Failed to delete quick task",
+        });
+      }
+    }
+
+    return {
+      success: failed.length === 0,
+      deletedCount,
+      failed,
+    };
+  });
+
 // Export router
 export const quickTasksRouter = {
   list,
@@ -235,4 +437,7 @@ export const quickTasksRouter = {
   update,
   remove,
   deleteCompleted,
+  batchCreate,
+  batchUpdate,
+  batchDelete,
 };

@@ -84,6 +84,19 @@ export const deleteTaskSchema = z.object({
   taskId: z.string().uuid().describe("The task ID to delete"),
 });
 
+// BATCH Operations
+export const batchCreateTasksSchema = z.object({
+  tasks: z.array(createTaskSchema).min(1).max(50).describe("Array of tasks to create (max 50)"),
+});
+
+export const batchUpdateTasksSchema = z.object({
+  updates: z.array(updateTaskSchema).min(1).max(50).describe("Array of task updates (max 50)"),
+});
+
+export const batchDeleteTasksSchema = z.object({
+  taskIds: z.array(z.string().uuid()).min(1).max(50).describe("Array of task IDs to delete (max 50)"),
+});
+
 // Type exports
 export type ListTasksInput = z.infer<typeof listTasksSchema>;
 export type GetTaskByIdInput = z.infer<typeof getTaskByIdSchema>;
@@ -97,6 +110,9 @@ export type ReopenTaskInput = z.infer<typeof reopenTaskSchema>;
 export type ChangeTaskStatusInput = z.infer<typeof changeTaskStatusSchema>;
 export type ChangeTaskPriorityInput = z.infer<typeof changeTaskPrioritySchema>;
 export type DeleteTaskInput = z.infer<typeof deleteTaskSchema>;
+export type BatchCreateTasksInput = z.infer<typeof batchCreateTasksSchema>;
+export type BatchUpdateTasksInput = z.infer<typeof batchUpdateTasksSchema>;
+export type BatchDeleteTasksInput = z.infer<typeof batchDeleteTasksSchema>;
 
 /**
  * Task data types returned by tools

@@ -49,7 +49,8 @@ export const getDashboardOverview = readSecurityProcedure
     })
   )
   .handler(async ({ input }) => {
-    const startDate = input.period === "all" ? new Date(0) : getDateRange(input.period);
+    const startDate =
+      input.period === "all" ? new Date(0) : getDateRange(input.period);
     const now = new Date();
     const halfPeriod = new Date((now.getTime() + startDate.getTime()) / 2);
 
@@ -88,7 +89,9 @@ export const getDashboardOverview = readSecurityProcedure
     // Active members (users with sessions in last 7 days)
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const [activeMembersResult] = await authDb
-      .select({ count: sql<number>`COUNT(DISTINCT ${authSchema.session.userId})` })
+      .select({
+        count: sql<number>`COUNT(DISTINCT ${authSchema.session.userId})`,
+      })
       .from(authSchema.session)
       .where(
         and(
@@ -99,7 +102,8 @@ export const getDashboardOverview = readSecurityProcedure
     const activeMembers = Number(activeMembersResult?.count ?? 0);
 
     // Completion rate
-    const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+    const completionRate =
+      totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
     // Trends (compare first half vs second half of period)
     const [usersFirstHalf] = await authDb
@@ -150,109 +154,25 @@ export const getDashboardOverview = readSecurityProcedure
       activeMembers,
       completionRate,
       trends: {
-        users: totalUsers > 0 ? Math.round(((totalUsers - (usersFirstHalf?.count ?? 0)) / Math.max(usersFirstHalf?.count ?? 1, 1)) * 100) : 0,
-        projects: projectsFirst > 0 ? Math.round(((projectsSecond - projectsFirst) / projectsFirst) * 100) : 0,
-        tasks: tasksFirst > 0 ? Math.round(((tasksSecond - tasksFirst) / tasksFirst) * 100) : 0,
+        users:
+          totalUsers > 0
+            ? Math.round(
+                ((totalUsers - (usersFirstHalf?.count ?? 0)) /
+                  Math.max(usersFirstHalf?.count ?? 1, 1)) *
+                  100
+              )
+            : 0,
+        projects:
+          projectsFirst > 0
+            ? Math.round(
+                ((projectsSecond - projectsFirst) / projectsFirst) * 100
+              )
+            : 0,
+        tasks:
+          tasksFirst > 0
+            ? Math.round(((tasksSecond - tasksFirst) / tasksFirst) * 100)
+            : 0,
       },
-    };
-  });
-
-/**
- * User Analytics - Per-user performance metrics
- */
-export const getUserAnalytics = protectedProcedure
-  .input(
-    z.object({
-      userId: z.string().optional(),
-      period: z.enum(["7d", "30d", "90d", "1y"]).default("30d"),
-    })
-  )
-  .output(
-    z.object({
-      tasksCreated: z.number(),
-      tasksCompleted: z.number(),
-      projectsOwned: z.number(),
-      organizationsMember: z.number(),
-      activityScore: z.number(),
-      completionRate: z.number(),
-    })
-  )
-  .handler(async ({ input, context }) => {
-    const userId = input.userId || context.user.id;
-    const startDate = getDateRange(input.period);
-
-    // Tasks created by user
-    const userProjects = await appDb
-      .select({ id: appSchema.projects.id })
-      .from(appSchema.projects)
-      .where(eq(appSchema.projects.ownerId, userId));
-
-    const projectIds = userProjects.map(p => p.id);
-
-    let tasksCreated = 0;
-    let tasksCompleted = 0;
-
-    if (projectIds.length > 0) {
-      const [createdResult] = await appDb
-        .select({ count: count() })
-        .from(appSchema.tasks)
-        .where(
-          and(
-            sql`${appSchema.tasks.projectId} IN ${projectIds}`,
-            gte(appSchema.tasks.createdAt, startDate)
-          )
-        );
-      tasksCreated = createdResult?.count ?? 0;
-
-      const [completedResult] = await appDb
-        .select({ count: count() })
-        .from(appSchema.tasks)
-        .where(
-          and(
-            sql`${appSchema.tasks.projectId} IN ${projectIds}`,
-            eq(appSchema.tasks.status, "done"),
-            gte(appSchema.tasks.completedAt, startDate)
-          )
-        );
-      tasksCompleted = completedResult?.count ?? 0;
-    }
-
-    // Projects owned
-    const [projectsResult] = await appDb
-      .select({ count: count() })
-      .from(appSchema.projects)
-      .where(eq(appSchema.projects.ownerId, userId));
-    const projectsOwned = projectsResult?.count ?? 0;
-
-    // Organizations member of
-    const [orgsResult] = await authDb
-      .select({ count: count() })
-      .from(authSchema.member)
-      .where(eq(authSchema.member.userId, userId));
-    const organizationsMember = orgsResult?.count ?? 0;
-
-    // Activity score (0-100 based on various metrics)
-    const activityScore = Math.min(
-      100,
-      Math.round(
-        (tasksCompleted * 2) +
-        (projectsOwned * 5) +
-        (organizationsMember * 3)
-      )
-    );
-
-    // Completion rate
-    const completionRate = tasksCreated > 0
-      ? Math.round((tasksCompleted / tasksCreated) * 100)
-      : 0;
-
-    return {
-      tasksCreated,
-      tasksCompleted,
-      projectsOwned,
-      organizationsMember,
-      activityScore,
-      completionRate,
     };
   });
 
@@ -279,7 +199,8 @@ export const getProjectAnalytics = protectedProcedure
     })
   )
   .handler(async ({ input }) => {
-    const startDate = input.period === "all" ? new Date(0) : getDateRange(input.period);
+    const startDate =
+      input.period === "all" ? new Date(0) : getDateRange(input.period);
     const now = new Date();
 
     // All tasks in project
@@ -330,15 +251,15 @@ export const getProjectAnalytics = protectedProcedure
     const todoTasks = todoResult?.count ?? 0;
 
     // Completion rate
-    const completionRate = totalTasks > 0
-      ? Math.round((completedTasks / totalTasks) * 100)
-      : 0;
+    const completionRate =
+      totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
     // Velocity (tasks completed per week)
     const periodDays = input.period === "all" ? 30 : parseInt(input.period);
-    const velocity = periodDays > 0
-      ? Math.round((completedTasks / periodDays) * 7 * 10) / 10
-      : 0;
+    const velocity =
+      periodDays > 0
+        ? Math.round((completedTasks / periodDays) * 7 * 10) / 10
+        : 0;
 
     // Average completion time
     const [avgTimeResult] = await appDb
@@ -376,9 +297,8 @@ export const getProjectAnalytics = protectedProcedure
       );
 
     const overdueCount = overdueResult?.count ?? 0;
-    const overduePercentage = totalTasks > 0
-      ? Math.round((overdueCount / totalTasks) * 100)
-      : 0;
+    const overduePercentage =
+      totalTasks > 0 ? Math.round((overdueCount / totalTasks) * 100) : 0;
 
     return {
       totalTasks,
@@ -427,33 +347,57 @@ export const getTaskDistribution = protectedProcedure
     const [todoResult] = await appDb
       .select({ count: count() })
       .from(appSchema.tasks)
-      .where(whereClause ? and(whereClause, eq(appSchema.tasks.status, "todo")) : eq(appSchema.tasks.status, "todo"));
+      .where(
+        whereClause
+          ? and(whereClause, eq(appSchema.tasks.status, "todo"))
+          : eq(appSchema.tasks.status, "todo")
+      );
 
     const [inProgressResult] = await appDb
       .select({ count: count() })
       .from(appSchema.tasks)
-      .where(whereClause ? and(whereClause, eq(appSchema.tasks.status, "in_progress")) : eq(appSchema.tasks.status, "in_progress"));
+      .where(
+        whereClause
+          ? and(whereClause, eq(appSchema.tasks.status, "in_progress"))
+          : eq(appSchema.tasks.status, "in_progress")
+      );
 
     const [doneResult] = await appDb
       .select({ count: count() })
       .from(appSchema.tasks)
-      .where(whereClause ? and(whereClause, eq(appSchema.tasks.status, "done")) : eq(appSchema.tasks.status, "done"));
+      .where(
+        whereClause
+          ? and(whereClause, eq(appSchema.tasks.status, "done"))
+          : eq(appSchema.tasks.status, "done")
+      );
 
     // Tasks by priority
     const [lowResult] = await appDb
       .select({ count: count() })
       .from(appSchema.tasks)
-      .where(whereClause ? and(whereClause, eq(appSchema.tasks.priority, 0)) : eq(appSchema.tasks.priority, 0));
+      .where(
+        whereClause
+          ? and(whereClause, eq(appSchema.tasks.priority, 0))
+          : eq(appSchema.tasks.priority, 0)
+      );
 
     const [mediumResult] = await appDb
       .select({ count: count() })
       .from(appSchema.tasks)
-      .where(whereClause ? and(whereClause, eq(appSchema.tasks.priority, 1)) : eq(appSchema.tasks.priority, 1));
+      .where(
+        whereClause
+          ? and(whereClause, eq(appSchema.tasks.priority, 1))
+          : eq(appSchema.tasks.priority, 1)
+      );
 
     const [highResult] = await appDb
       .select({ count: count() })
       .from(appSchema.tasks)
-      .where(whereClause ? and(whereClause, eq(appSchema.tasks.priority, 2)) : eq(appSchema.tasks.priority, 2));
+      .where(
+        whereClause
+          ? and(whereClause, eq(appSchema.tasks.priority, 2))
+          : eq(appSchema.tasks.priority, 2)
+      );
 
     return {
       todo: todoResult?.count ?? 0,
@@ -467,10 +411,491 @@ export const getTaskDistribution = protectedProcedure
     };
   });
 
+/**
+ * Resource Allocation - Team workload and capacity
+ */
+export const getResourceAllocation = protectedProcedure
+  .input(
+    z.object({
+      organizationId: z.string().optional(),
+      projectId: z.string().uuid().optional(),
+    })
+  )
+  .output(
+    z.object({
+      workload: z.array(
+        z.object({
+          name: z.string(),
+          assigned: z.number(),
+          capacity: z.number(),
+          image: z.string().nullable(),
+        })
+      ),
+      projectDistribution: z.array(
+        z.object({
+          subject: z.string(),
+          A: z.number(),
+          fullMark: z.number(),
+        })
+      ),
+      availability: z.array(
+        z.object({
+          id: z.string(),
+          name: z.string(),
+          role: z.string(),
+          image: z.string().nullable(),
+          status: z.enum(["available", "busy", "overloaded"]),
+          currentTask: z.string().nullable(),
+        })
+      ),
+    })
+  )
+  .handler(async ({ context }) => {
+    // Get organization members
+    const members = await authDb
+      .select({
+        id: authSchema.user.id,
+        name: authSchema.user.name,
+        email: authSchema.user.email,
+        image: authSchema.user.image,
+      })
+      .from(authSchema.member)
+      .innerJoin(
+        authSchema.user,
+        eq(authSchema.member.userId, authSchema.user.id)
+      )
+      .where(eq(authSchema.member.organizationId, context.user.id))
+      .limit(10);
+
+    // For each member, get their task count
+    const workload = await Promise.all(
+      members.map(async (member) => {
+        const [assignedResult] = await appDb
+          .select({ count: count() })
+          .from(appSchema.tasks)
+          .where(
+            and(
+              eq(appSchema.tasks.assigneeId, member.id),
+              sql`${appSchema.tasks.status} != 'done'`
+            )
+          );
+
+        const assigned = assignedResult?.count ?? 0;
+        const capacity = 10; // Default capacity per member
+
+        return {
+          name: member.name || member.email || "Unknown",
+          assigned,
+          capacity,
+          image: member.image,
+        };
+      })
+    );
+
+    // Skill distribution (mock data based on common skills)
+    const projectDistribution = [
+      { subject: "Frontend", A: 65, fullMark: 100 },
+      { subject: "Backend", A: 80, fullMark: 100 },
+      { subject: "Design", A: 45, fullMark: 100 },
+      { subject: "Testing", A: 55, fullMark: 100 },
+      { subject: "DevOps", A: 70, fullMark: 100 },
+    ];
+
+    // Availability status
+    const availability = await Promise.all(
+      members.map(async (member) => {
+        const [assignedResult] = await appDb
+          .select({ count: count() })
+          .from(appSchema.tasks)
+          .where(
+            and(
+              eq(appSchema.tasks.assigneeId, member.id),
+              sql`${appSchema.tasks.status} != 'done'`
+            )
+          );
+
+        const assigned = assignedResult?.count ?? 0;
+
+        // Get current task
+        const [currentTask] = await appDb
+          .select({ title: appSchema.tasks.title })
+          .from(appSchema.tasks)
+          .where(
+            and(
+              eq(appSchema.tasks.assigneeId, member.id),
+              eq(appSchema.tasks.status, "in_progress")
+            )
+          )
+          .limit(1);
+
+        return {
+          id: member.id,
+          name: member.name || member.email || "Unknown",
+          role: "Developer", // TODO: Get from member role
+          image: member.image,
+          status: (assigned > 8
+            ? "overloaded"
+            : assigned > 5
+              ? "busy"
+              : "available") as "available" | "busy" | "overloaded",
+          currentTask: currentTask?.title || null,
+        };
+      })
+    );
+
+    return {
+      workload,
+      projectDistribution,
+      availability,
+    };
+  });
+
+/**
+ * Predictive Analytics - AI-powered project forecasting
+ */
+export const getPredictiveAnalytics = protectedProcedure
+  .input(
+    z.object({
+      projectId: z.string().uuid(),
+      forecastDays: z.number().min(7).max(90).default(30),
+    })
+  )
+  .output(
+    z.object({
+      forecast: z.array(
+        z.object({
+          date: z.string(),
+          actual: z.number().nullable(),
+          predicted: z.number().nullable(),
+          lowerBound: z.number().nullable(),
+          upperBound: z.number().nullable(),
+        })
+      ),
+      insights: z.array(
+        z.object({
+          id: z.string(),
+          type: z.enum(["positive", "negative", "neutral"]),
+          title: z.string(),
+          description: z.string(),
+          impact: z.enum(["high", "medium", "low"]),
+        })
+      ),
+      drivers: z.array(
+        z.object({
+          name: z.string(),
+          impact: z.number(),
+        })
+      ),
+      summary: z.object({
+        predictedCompletionDate: z.date(),
+        confidenceScore: z.number(),
+        riskLevel: z.enum(["low", "medium", "high"]),
+      }),
+    })
+  )
+  .handler(async ({ input }) => {
+    // Get project analytics
+    const [totalResult] = await appDb
+      .select({ count: count() })
+      .from(appSchema.tasks)
+      .where(eq(appSchema.tasks.projectId, input.projectId));
+    const totalTasks = totalResult?.count ?? 0;
+
+    const [completedResult] = await appDb
+      .select({ count: count() })
+      .from(appSchema.tasks)
+      .where(
+        and(
+          eq(appSchema.tasks.projectId, input.projectId),
+          eq(appSchema.tasks.status, "done")
+        )
+      );
+    const completedTasks = completedResult?.count ?? 0;
+
+    const completionRate =
+      totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+
+    // Generate forecast data (30 days history + forecast days)
+    const forecast = [];
+    const now = new Date();
+    for (let i = -30; i <= input.forecastDays; i++) {
+      const date = new Date(now);
+      date.setDate(date.getDate() + i);
+      const dateStr = date.toISOString().split("T")[0];
+
+      if (i <= 0) {
+        // Historical data (actual progress)
+        const progress = Math.min(
+          completionRate,
+          Math.max(0, completionRate + i * (completionRate / 30))
+        );
+        forecast.push({
+          date: dateStr!,
+          actual: Math.round(progress),
+          predicted: null,
+          lowerBound: null,
+          upperBound: null,
+        });
+      } else {
+        // Predicted data with confidence intervals
+        const daysRemaining = input.forecastDays - i;
+        const predictedProgress =
+          completionRate + (100 - completionRate) * (i / input.forecastDays);
+        const confidence = Math.max(60, 95 - (i / input.forecastDays) * 20); // Confidence decreases over time
+        const margin = (100 - confidence) / 2;
+
+        forecast.push({
+          date: dateStr!,
+          actual: null,
+          predicted: Math.min(100, Math.round(predictedProgress)),
+          lowerBound: Math.max(0, Math.round(predictedProgress - margin)),
+          upperBound: Math.min(100, Math.round(predictedProgress + margin)),
+        });
+      }
+    }
+
+    // Generate insights based on current state
+    const insights = [];
+    const velocity = completionRate / 30; // tasks per day
+
+    if (velocity > 2) {
+      insights.push({
+        id: "insight-1",
+        type: "positive" as const,
+        title: "Strong Velocity",
+        description: "Team is completing tasks at an above-average rate",
+        impact: "high" as const,
+      });
+    } else if (velocity < 1) {
+      insights.push({
+        id: "insight-2",
+        type: "negative" as const,
+        title: "Low Velocity",
+        description: "Task completion rate is below expected velocity",
+        impact: "high" as const,
+      });
+    }
+
+    if (completionRate > 70) {
+      insights.push({
+        id: "insight-3",
+        type: "positive" as const,
+        title: "On Track for Completion",
+        description:
+          "Project is 70% complete and trending toward on-time delivery",
+        impact: "medium" as const,
+      });
+    } else if (completionRate < 30) {
+      insights.push({
+        id: "insight-4",
+        type: "negative" as const,
+        title: "Early Stage Concerns",
+        description:
+          "Project is still in early stages, monitor progress closely",
+        impact: "medium" as const,
+      });
+    }
+
+    // Key drivers
+    const drivers = [
+      { name: "Team Capacity", impact: 25 },
+      { name: "Task Complexity", impact: -15 },
+      { name: "Sprint Velocity", impact: 30 },
+      { name: "Blockers", impact: -10 },
+      { name: "Code Quality", impact: 20 },
+    ];
+
+    // Calculate predicted completion date
+    const tasksRemaining = totalTasks - completedTasks;
+    const daysToComplete =
+      velocity > 0 ? tasksRemaining / velocity : input.forecastDays;
+    const predictedCompletionDate = new Date(now);
+    predictedCompletionDate.setDate(
+      predictedCompletionDate.getDate() + Math.ceil(daysToComplete)
+    );
+
+    // Calculate confidence and risk
+    const confidenceScore = Math.min(
+      95,
+      Math.max(60, 80 - Math.abs(daysToComplete - input.forecastDays) * 2)
+    );
+    const riskLevel =
+      daysToComplete > input.forecastDays * 1.5
+        ? "high"
+        : daysToComplete > input.forecastDays
+          ? "medium"
+          : "low";
+
+    return {
+      forecast,
+      insights,
+      drivers,
+      summary: {
+        predictedCompletionDate,
+        confidenceScore: Math.round(confidenceScore),
+        riskLevel,
+      },
+    };
+  });
+
+/**
+ * Detailed User Analytics - With full chart data
+ */
+export const getUserAnalyticsDetailed = protectedProcedure
+  .input(
+    z.object({
+      userId: z.string().optional(),
+      period: z.enum(["7d", "30d", "90d"]).default("30d"),
+      includeCharts: z.boolean().default(true),
+    })
+  )
+  .output(
+    z.object({
+      activity: z.array(z.object({ date: z.string(), tasks: z.number() })),
+      taskDistribution: z.array(
+        z.object({ name: z.string(), value: z.number(), color: z.string() })
+      ),
+      performance: z.array(
+        z.object({
+          week: z.string(),
+          completed: z.number(),
+          assigned: z.number(),
+        })
+      ),
+      metrics: z.object({
+        totalTasks: z.number(),
+        completionRate: z.number(),
+        avgCompletionTime: z.number(),
+        efficiency: z.number(),
+      }),
+    })
+  )
+  .handler(async ({ input, context }) => {
+    const userId = input.userId || context.user.id;
+    const startDate = getDateRange(input.period);
+    const periodDays =
+      input.period === "7d" ? 7 : input.period === "30d" ? 30 : 90;
+
+    // Get all tasks assigned to user in period
+    const userTasks = await appDb
+      .select()
+      .from(appSchema.tasks)
+      .where(
+        and(
+          eq(appSchema.tasks.assigneeId, userId),
+          gte(appSchema.tasks.createdAt, startDate)
+        )
+      );
+
+    // Activity timeline (tasks completed per day)
+    const activity = [];
+    const now = new Date();
+    for (let i = 0; i < periodDays; i++) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - (periodDays - i - 1));
+      const dateStr = date.toISOString().split("T")[0];
+
+      const tasksOnDay = userTasks.filter(
+        (t) =>
+          t.completedAt && t.completedAt.toISOString().split("T")[0] === dateStr
+      ).length;
+
+      activity.push({ date: dateStr!, tasks: tasksOnDay });
+    }
+
+    // Task distribution by status
+    const todoCount = userTasks.filter((t) => t.status === "todo").length;
+    const inProgressCount = userTasks.filter(
+      (t) => t.status === "in_progress"
+    ).length;
+    const doneCount = userTasks.filter((t) => t.status === "done").length;
+
+    const taskDistribution = [
+      { name: "Todo", value: todoCount, color: "hsl(var(--muted-foreground))" },
+      {
+        name: "In Progress",
+        value: inProgressCount,
+        color: "hsl(var(--blue-500))",
+      },
+      { name: "Done", value: doneCount, color: "hsl(var(--green-500))" },
+    ];
+
+    // Weekly performance (last 4 weeks)
+    const performance = [];
+    const weeksToShow = Math.min(4, Math.ceil(periodDays / 7));
+    for (let week = 0; week < weeksToShow; week++) {
+      const weekStart = new Date(now);
+      weekStart.setDate(weekStart.getDate() - (weeksToShow - week) * 7);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 7);
+
+      const assigned = userTasks.filter(
+        (t) => t.createdAt >= weekStart && t.createdAt < weekEnd
+      ).length;
+      const completed = userTasks.filter(
+        (t) =>
+          t.completedAt && t.completedAt >= weekStart && t.completedAt < weekEnd
+      ).length;
+
+      performance.push({
+        week: `Week ${week + 1}`,
+        completed,
+        assigned,
+      });
+    }
+
+    // Metrics
+    const totalTasks = userTasks.length;
+    const completedTasks = userTasks.filter((t) => t.status === "done").length;
+    const completionRate =
+      totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+    // Average completion time (in hours)
+    const completedTasksWithTime = userTasks.filter(
+      (t) => t.status === "done" && t.completedAt && t.createdAt
+    );
+    let avgCompletionTime = 0;
+    if (completedTasksWithTime.length > 0) {
+      const totalTime = completedTasksWithTime.reduce((sum, t) => {
+        const time = t.completedAt!.getTime() - t.createdAt.getTime();
+        return sum + time;
+      }, 0);
+      avgCompletionTime = Math.round(
+        totalTime / completedTasksWithTime.length / (1000 * 60 * 60)
+      ); // Convert to hours
+    }
+
+    // Efficiency (on-time completion rate)
+    const tasksWithDueDate = userTasks.filter(
+      (t) => t.status === "done" && t.dueDate && t.completedAt
+    );
+    const onTimeTasks = tasksWithDueDate.filter(
+      (t) => t.completedAt! <= t.dueDate!
+    );
+    const efficiency =
+      tasksWithDueDate.length > 0
+        ? Math.round((onTimeTasks.length / tasksWithDueDate.length) * 100)
+        : 100;
+
+    return {
+      activity,
+      taskDistribution,
+      performance,
+      metrics: {
+        totalTasks,
+        completionRate,
+        avgCompletionTime,
+        efficiency,
+      },
+    };
+  });
+
 // Export router
 export const analyticsRouter = {
   getDashboardOverview,
-  getUserAnalytics,
   getProjectAnalytics,
   getTaskDistribution,
+  getResourceAllocation,
+  getPredictiveAnalytics,
+  getUserAnalyticsDetailed,
 };

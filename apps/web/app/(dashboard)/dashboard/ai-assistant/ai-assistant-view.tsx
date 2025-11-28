@@ -54,6 +54,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import type { UIMessage } from "ai";
 import { getToolComponent } from "./registry";
+import { useUserContext } from "./_hooks/use-user-context";
 import "./tools/user-tools"; // Register tools
 import "./tools/organization-tools"; // Register organization tools
 import "./tools/project-tools"; // Register project tools
@@ -86,6 +87,9 @@ export function AiAssistantView() {
   const [text, setText] = useState<string>("");
   const [selectedModel, setSelectedModel] = useState<string>(models[0].id);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Get user context from session
+  const { userName } = useUserContext();
 
   // History state
   const [history, setHistory] = useState<HistoryConversation[]>([]);
@@ -253,7 +257,7 @@ export function AiAssistantView() {
         strokeDasharray={"4 2"}
         className="[mask-image:radial-gradient(600px_circle_at_center,white,transparent)] opacity-50 pointer-events-none"
       />
-      <Conversation className="z-10 w-full mx-auto pt-16">
+      <Conversation className="z-10 w-full mx-auto pt-16 pointer-events-none">
         <ScrollManager messages={messages} />
         {messages.length === 0 ? (
           <ConversationEmptyState
@@ -263,12 +267,15 @@ export function AiAssistantView() {
           >
             <div className="z-10 flex flex-col items-center gap-2 pointer-events-none mt-64">
               <h3 className="font-medium text-xl text-foreground animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-500 fill-mode-both">
-                Good to see you, Demo.
+                Good to see you, {userName.split(" ")[0] || userName}.
               </h3>
+              <p className="text-sm text-muted-foreground animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-700 fill-mode-both">
+                How can I help you today?
+              </p>
             </div>
           </ConversationEmptyState>
         ) : (
-          <ConversationContent className="pb-32">
+          <ConversationContent className="pb-32 pointer-events-auto">
             {messages.map((msg) => (
               <Message key={msg.id} from={msg.role}>
                 <MessageContent>
@@ -347,6 +354,128 @@ export function AiAssistantView() {
                                           break;
                                         case "delete":
                                           prompt = `Delete user ${data}`;
+                                          break;
+                                      }
+                                    }
+                                    // Quick Task Actions
+                                    else if (
+                                      toolName === "listQuickTasks" ||
+                                      toolName.endsWith("QuickTask")
+                                    ) {
+                                      switch (action) {
+                                        case "toggle":
+                                          prompt = `Toggle quick task ${data}`;
+                                          break;
+                                        case "delete":
+                                          prompt = `Delete quick task ${data}`;
+                                          break;
+                                        case "create":
+                                          prompt = `Create quick task: ${data}`;
+                                          break;
+                                      }
+                                    }
+                                    // Task Actions
+                                    else if (
+                                      toolName === "listTasks" ||
+                                      toolName === "getMyTasks" ||
+                                      toolName.endsWith("Task")
+                                    ) {
+                                      switch (action) {
+                                        case "viewDetails":
+                                          prompt = `Show details for task ${data}`;
+                                          break;
+                                        case "changeStatus":
+                                          prompt = `Change status of task ${data.taskId} to ${data.status}`;
+                                          break;
+                                        case "edit":
+                                          prompt = `Edit task ${data}`;
+                                          break;
+                                        case "delete":
+                                          prompt = `Delete task ${data}`;
+                                          break;
+                                        case "toggle_subtask":
+                                          // Optional: handle subtask toggle if API supports it via chat
+                                          break;
+                                        case "share":
+                                          // Optional: handle share
+                                          break;
+                                      }
+                                    }
+                                    // Project Actions
+                                    else if (
+                                      toolName === "listProjects" ||
+                                      toolName.endsWith("Project")
+                                    ) {
+                                      switch (action) {
+                                        case "viewDetails":
+                                          prompt = `Show details for project ${data}`;
+                                          break;
+                                        case "edit":
+                                          prompt = `Edit project ${data}`;
+                                          break;
+                                        case "delete":
+                                          prompt = `Delete project ${data}`;
+                                          break;
+                                      }
+                                    }
+                                    // Quick Task Actions
+                                    else if (
+                                      toolName === "listQuickTasks" ||
+                                      toolName.endsWith("QuickTask")
+                                    ) {
+                                      switch (action) {
+                                        case "toggle":
+                                          prompt = `Toggle quick task ${data}`;
+                                          break;
+                                        case "delete":
+                                          prompt = `Delete quick task ${data}`;
+                                          break;
+                                        case "create":
+                                          prompt = `Create quick task: ${data}`;
+                                          break;
+                                      }
+                                    }
+                                    // Task Actions
+                                    else if (
+                                      toolName === "listTasks" ||
+                                      toolName === "getMyTasks" ||
+                                      toolName.endsWith("Task")
+                                    ) {
+                                      switch (action) {
+                                        case "viewDetails":
+                                          prompt = `Show details for task ${data}`;
+                                          break;
+                                        case "changeStatus":
+                                          prompt = `Change status of task ${data.taskId} to ${data.status}`;
+                                          break;
+                                        case "edit":
+                                          prompt = `Edit task ${data}`;
+                                          break;
+                                        case "delete":
+                                          prompt = `Delete task ${data}`;
+                                          break;
+                                        case "toggle_subtask":
+                                          // Optional: handle subtask toggle if API supports it via chat
+                                          break;
+                                        case "share":
+                                          // Optional: handle share
+                                          break;
+                                      }
+                                    }
+                                    // Project Actions
+                                    else if (
+                                      toolName === "listProjects" ||
+                                      toolName.endsWith("Project")
+                                    ) {
+                                      switch (action) {
+                                        case "viewDetails":
+                                          prompt = `Show details for project ${data}`;
+                                          break;
+                                        case "edit":
+                                          prompt = `Edit project ${data}`;
+                                          break;
+                                        case "delete":
+                                          prompt = `Delete project ${data}`;
                                           break;
                                       }
                                     }

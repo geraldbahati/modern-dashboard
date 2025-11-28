@@ -12,6 +12,9 @@ import {
   changeTaskStatusSchema,
   changeTaskPrioritySchema,
   deleteTaskSchema,
+  batchCreateTasksSchema,
+  batchUpdateTasksSchema,
+  batchDeleteTasksSchema,
 } from "@workspace/ai/tools";
 import type { Client } from "@workspace/api/client";
 
@@ -297,6 +300,84 @@ export const createTaskTools = (client: Client) => ({
           success: false,
           error:
             error instanceof Error ? error.message : "Failed to delete task",
+        };
+      }
+    },
+  }),
+
+  // BATCH CREATE TASKS
+  batchCreateTasks: tool({
+    description:
+      "Create multiple tasks at once (up to 50 tasks). Useful for bulk task creation or importing tasks. Returns both successfully created tasks and any failures with error messages.",
+    inputSchema: batchCreateTasksSchema,
+    execute: async (params) => {
+      try {
+        const result = await client.tasks.batchCreate(params);
+        return {
+          success: result.success,
+          created: result.created,
+          failed: result.failed,
+          message: `Created ${result.created.length} tasks${result.failed.length > 0 ? `, ${result.failed.length} failed` : ""}`,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to batch create tasks",
+        };
+      }
+    },
+  }),
+
+  // BATCH UPDATE TASKS
+  batchUpdateTasks: tool({
+    description:
+      "Update multiple tasks at once (up to 50 tasks). Each update can modify different fields (title, description, status, priority, assignee, due date). Returns successfully updated tasks and any failures with error messages.",
+    inputSchema: batchUpdateTasksSchema,
+    execute: async (params) => {
+      try {
+        const result = await client.tasks.batchUpdate(params);
+        return {
+          success: result.success,
+          updated: result.updated,
+          failed: result.failed,
+          message: `Updated ${result.updated.length} tasks${result.failed.length > 0 ? `, ${result.failed.length} failed` : ""}`,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to batch update tasks",
+        };
+      }
+    },
+  }),
+
+  // BATCH DELETE TASKS
+  batchDeleteTasks: tool({
+    description:
+      "Delete multiple tasks at once (up to 50 tasks). Only the project owner can delete tasks. Returns count of successfully deleted tasks and any failures with error messages.",
+    inputSchema: batchDeleteTasksSchema,
+    execute: async (params) => {
+      try {
+        const result = await client.tasks.batchDelete(params);
+        return {
+          success: result.success,
+          deletedCount: result.deletedCount,
+          failed: result.failed,
+          message: `Deleted ${result.deletedCount} tasks${result.failed.length > 0 ? `, ${result.failed.length} failed` : ""}`,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to batch delete tasks",
         };
       }
     },

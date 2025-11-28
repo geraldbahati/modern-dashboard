@@ -46,7 +46,7 @@ const transformProjectDetails = (project: Project) => ({
   name: project.name,
   description: project.description,
   status: project.status,
-  visibility: project.isPublic ? "public" as const : "private" as const,
+  visibility: project.isPublic ? ("public" as const) : ("private" as const),
   progress: 0, // Will be calculated from tasks
   startDate: project.createdAt,
   dueDate: null,
@@ -65,6 +65,8 @@ export const ListProjectsTool: React.FC<
       projects={(result?.data || []).map(transformProject)}
       total={result?.count}
       onProjectClick={(projectId) => onAction?.("viewDetails", projectId)}
+      onEdit={(projectId) => onAction?.("edit", projectId)}
+      onDelete={(projectId) => onAction?.("delete", projectId)}
     />
   );
 };

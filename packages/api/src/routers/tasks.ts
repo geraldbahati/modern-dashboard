@@ -471,6 +471,227 @@ export const remove = writeSecurityProcedure
     return { success: true };
   });
 
+/**
+ * Batch create tasks
+ */
+export const batchCreate = writeSecurityProcedure
+  .route({ method: "POST", path: "/tasks/batch" })
+  .input(
+    z.object({
+      tasks: z
+        .array(
+          z.object({
+            title: z.string().min(1).max(255),
+            description: z.string().optional(),
+            projectId: z.string().uuid(),
+            assigneeId: z.string().optional(),
+            status: z.enum(["todo", "in_progress", "done"]).default("todo"),
+            priority: z.enum(["0", "1", "2"]).default("0"),
+            dueDate: z.string().optional(),
+          })
+        )
+        .min(1)
+        .max(50),
+    })
+  )
+  .output(
+    z.object({
+      success: z.boolean(),
+      created: z.array(taskSchema),
+      failed: z.array(
+        z.object({
+          index: z.number(),
+          error: z.string(),
+        })
+      ),
+    })
+  )
+  .handler(async ({ input, context }) => {
+    const created: typeof taskSchema._type[] = [];
+    const failed: { index: number; error: string }[] = [];
+
+    for (let i = 0; i < input.tasks.length; i++) {
+      const task = input.tasks[i];
+      if (!task) continue;
+
+      try {
+        // Verify project ownership
+        await verifyProjectOwnership(task.projectId, context.user.id);
+
+        const insertData: any = {
+          title: task.title,
+          description: task.description || null,
+          projectId: task.projectId,
+          assigneeId: task.assigneeId || null,
+          status: task.status || "todo",
+          priority: parseInt(task.priority || "0"),
+          dueDate: task.dueDate ? new Date(task.dueDate) : null,
+        };
+
+        const [newTask] = await appDb.insert(tasks).values(insertData).returning();
+
+        if (newTask) {
+          created.push(toTask(newTask));
+        }
+      } catch (error) {
+        failed.push({
+          index: i,
+          error: error instanceof Error ? error.message : "Failed to create task",
+        });
+      }
+    }
+
+    return {
+      success: failed.length === 0,
+      created,
+      failed,
+    };
+  });
+
+/**
+ * Batch update tasks
+ */
+export const batchUpdate = writeSecurityProcedure
+  .route({ method: "PATCH", path: "/tasks/batch" })
+  .input(
+    z.object({
+      updates: z
+        .array(
+          z.object({
+            taskId: z.string().uuid(),
+            title: z.string().min(1).max(255).optional(),
+            description: z.string().optional(),
+            assigneeId: z.string().optional(),
+            status: z.enum(["todo", "in_progress", "done"]).optional(),
+            priority: z.enum(["0", "1", "2"]).optional(),
+            dueDate: z.string().optional(),
+          })
+        )
+        .min(1)
+        .max(50),
+    })
+  )
+  .output(
+    z.object({
+      success: z.boolean(),
+      updated: z.array(taskSchema),
+      failed: z.array(
+        z.object({
+          taskId: z.string(),
+          error: z.string(),
+        })
+      ),
+    })
+  )
+  .handler(async ({ input, context }) => {
+    const updated: typeof taskSchema._type[] = [];
+    const failed: { taskId: string; error: string }[] = [];
+
+    for (const update of input.updates) {
+      try {
+        const { taskId, ...updates } = update;
+
+        // Get existing task
+        const [existing] = await appDb.select().from(tasks).where(eq(tasks.id, taskId));
+
+        if (!existing) {
+          throw new Error("Task not found");
+        }
+
+        // Verify project ownership
+        await verifyProjectOwnership(existing.projectId, context.user.id);
+
+        // Prepare update data
+        const updateData: any = { ...updates };
+        if (updates.priority) {
+          updateData.priority = parseInt(updates.priority);
+        }
+        if (updates.dueDate) {
+          updateData.dueDate = new Date(updates.dueDate);
+        }
+        if (updates.status === "done" && existing.status !== "done") {
+          updateData.completedAt = new Date();
+        } else if (updates.status !== "done" && existing.status === "done") {
+          updateData.completedAt = null;
+        }
+
+        const [updatedTask] = await appDb
+          .update(tasks)
+          .set(updateData)
+          .where(eq(tasks.id, taskId))
+          .returning();
+
+        if (updatedTask) {
+          updated.push(toTask(updatedTask));
+        }
+      } catch (error) {
+        failed.push({
+          taskId: update.taskId,
+          error: error instanceof Error ? error.message : "Failed to update task",
+        });
+      }
+    }
+
+    return {
+      success: failed.length === 0,
+      updated,
+      failed,
+    };
+  });
+
+/**
+ * Batch delete tasks
+ */
+export const batchDelete = writeSecurityProcedure
+  .route({ method: "DELETE", path: "/tasks/batch" })
+  .input(
+    z.object({
+      taskIds: z.array(z.string().uuid()).min(1).max(50),
+    })
+  )
+  .output(
+    z.object({
+      success: z.boolean(),
+      deletedCount: z.number(),
+      failed: z.array(
+        z.object({
+          taskId: z.string(),
+          error: z.string(),
+        })
+      ),
+    })
+  )
+  .handler(async ({ input, context }) => {
+    const failed: { taskId: string; error: string }[] = [];
+    let deletedCount = 0;
+
+    for (const taskId of input.taskIds) {
+      try {
+        const [existing] = await appDb.select().from(tasks).where(eq(tasks.id, taskId));
+
+        if (!existing) {
+          throw new Error("Task not found");
+        }
+
+        await verifyProjectOwnership(existing.projectId, context.user.id);
+
+        await appDb.delete(tasks).where(eq(tasks.id, taskId));
+        deletedCount++;
+      } catch (error) {
+        failed.push({
+          taskId,
+          error: error instanceof Error ? error.message : "Failed to delete task",
+        });
+      }
+    }
+
+    return {
+      success: failed.length === 0,
+      deletedCount,
+      failed,
+    };
+  });
+
 // Export router
 export const tasksRouter = {
   list,
@@ -482,4 +703,7 @@ export const tasksRouter = {
   assign,
   unassign,
   remove,
+  batchCreate,
+  batchUpdate,
+  batchDelete,
 };

@@ -1,5 +1,5 @@
 import { streamText, tool, convertToModelMessages, stepCountIs } from "ai";
-import { getModel, type ModelId, systemPrompt } from "@workspace/ai";
+import { getModel, type ModelId, generateSystemPrompt } from "@workspace/ai";
 import { auth } from "@workspace/auth/next";
 import { headers } from "next/headers";
 import { createClient } from "@workspace/api/client";
@@ -14,6 +14,15 @@ interface ChatRequest {
   model?: string;
 }
 
+// Extended user type that includes role from admin plugin
+interface UserWithRole {
+  id: string;
+  name: string;
+  email: string;
+  role?: string | null;
+  image?: string | null;
+}
+
 export async function POST(req: Request) {
   try {
     // Authenticate user
@@ -24,6 +33,8 @@ export async function POST(req: Request) {
     if (!session?.user) {
       return new Response("Unauthorized", { status: 401 });
     }
+
+    const user = session.user as UserWithRole;
 
     // Parse request
     const body = (await req.json()) as ChatRequest;
@@ -44,10 +55,19 @@ export async function POST(req: Request) {
 
     const coreMessages = convertToModelMessages(messages);
 
+    // Generate personalized system prompt with user context
+    const personalizedSystemPrompt = generateSystemPrompt({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role || "user",
+      image: user.image,
+    });
+
     // Stream response with tools
     const result = streamText({
       model: getModel(modelId),
-      system: systemPrompt,
+      system: personalizedSystemPrompt,
       messages: coreMessages,
       stopWhen: stepCountIs(5),
       providerOptions: {
