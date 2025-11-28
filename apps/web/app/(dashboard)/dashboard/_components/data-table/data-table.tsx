@@ -4,18 +4,15 @@ import * as React from "react";
 import {
   ColumnDef,
   ColumnFiltersState,
-  PaginationState,
   SortingState,
   VisibilityState,
   flexRender,
   getCoreRowModel,
-  getFacetedRowModel,
-  getFacetedUniqueValues,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
-  Table as TanstackTable,
+  RowSelectionState,
 } from "@tanstack/react-table";
 
 import {
@@ -27,108 +24,63 @@ import {
   TableRow,
 } from "@workspace/ui/components/table";
 
-import { useTableParams } from "@/hooks/use-table-params";
-import { DataTablePagination } from "./data-table-pagination";
-import { DataTableToolbar } from "./data-table-toolbar";
-
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
-  searchKey?: string;
-  customToolbar?: React.ComponentType<{ table: TanstackTable<TData> }>;
+  toolbar?: React.ReactNode;
+  onRowClick?: (row: TData) => void;
+  enableRowSelection?: boolean;
+  enableMultiRowSelection?: boolean;
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
-  searchKey,
-  customToolbar,
+  toolbar,
+  onRowClick,
+  enableRowSelection = false,
+  enableMultiRowSelection = true,
 }: DataTableProps<TData, TValue>) {
-  const [rowSelection, setRowSelection] = React.useState({});
-  const [state, setState] = useTableParams();
-
-  const { sorting, columnVisibility, columnFilters, pageIndex, pageSize } =
-    state;
-
-  const pagination = React.useMemo(
-    () => ({
-      pageIndex,
-      pageSize,
-    }),
-    [pageIndex, pageSize]
+  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    []
   );
+  const [columnVisibility, setColumnVisibility] =
+    React.useState<VisibilityState>({});
+  const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
 
   const table = useReactTable({
     data,
     columns,
     state: {
+      sorting,
       columnFilters,
-      pagination,
+      columnVisibility,
+      rowSelection,
     },
-    enableRowSelection: true,
+    enableRowSelection,
+    enableMultiRowSelection,
     onRowSelectionChange: setRowSelection,
-    onSortingChange: (updater) => {
-      if (typeof updater === "function") {
-        const newSorting = updater(sorting);
-        setState({ sorting: newSorting });
-      } else {
-        setState({ sorting: updater });
-      }
-    },
-    onColumnFiltersChange: (updater) => {
-      if (typeof updater === "function") {
-        const newFilters = updater(columnFilters);
-        setState({ columnFilters: newFilters });
-      } else {
-        setState({ columnFilters: updater });
-      }
-    },
-    onColumnVisibilityChange: (updater) => {
-      if (typeof updater === "function") {
-        const newVisibility = updater(columnVisibility);
-        setState({ columnVisibility: newVisibility });
-      } else {
-        setState({ columnVisibility: updater });
-      }
-    },
-    onPaginationChange: (updater) => {
-      if (typeof updater === "function") {
-        const newPagination = updater(pagination);
-        setState({
-          pageIndex: newPagination.pageIndex,
-          pageSize: newPagination.pageSize,
-        });
-      } else {
-        setState({
-          pageIndex: updater.pageIndex,
-          pageSize: updater.pageSize,
-        });
-      }
-    },
-
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
   });
 
   return (
     <div className="space-y-4">
-      {customToolbar ? (
-        React.createElement(customToolbar, { table })
-      ) : (
-        <DataTableToolbar table={table} searchKey={searchKey} />
-      )}
-      <div className="rounded-md border">
+      {toolbar}
+      <div className="overflow-hidden rounded-xl border bg-card">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id} colSpan={header.colSpan}>
+                    <TableHead key={header.id}>
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -147,6 +99,8 @@ export function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  className={onRowClick ? "cursor-pointer" : undefined}
+                  onClick={() => onRowClick?.(row.original)}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
@@ -171,7 +125,8 @@ export function DataTable<TData, TValue>({
           </TableBody>
         </Table>
       </div>
-      <DataTablePagination table={table} />
     </div>
   );
 }
+
+export { useReactTable, type ColumnDef };

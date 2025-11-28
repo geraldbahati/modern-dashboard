@@ -43,7 +43,7 @@ export const createTools = (client: Client) => ({
         return {
           success: true,
           data: result.users,
-          count: result.total,
+          count: result.pagination.totalItems,
         };
       } catch (error) {
         return {
