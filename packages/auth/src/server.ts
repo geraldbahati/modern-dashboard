@@ -3,8 +3,8 @@
  * Import from "@workspace/auth/server"
  */
 
-export { createAuth, getBaseAuthConfig, auth } from "./config";
-export type { AuthConfigParams } from "./config";
+export { createAuth, getBaseAuthConfig, auth } from "./config.js";
+export type { AuthConfigParams } from "./config.js";
 
 // Re-export permissions for middleware
 export {
@@ -15,4 +15,4 @@ export {
   user,
   roles,
   type RoleName,
-} from "./permissions";
+} from "./permissions.js";

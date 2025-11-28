@@ -3,16 +3,16 @@
  * Combines all sub-routers into a single router object
  */
 
-import { usersRouter } from "./routers/users";
-import { healthRouter } from "./routers/health";
-import { projectsRouter } from "./routers/projects";
-import { metricsRouter } from "./routers/metrics";
-import { quickTasksRouter } from "./routers/quick-tasks";
-import { insightsRouter } from "./routers/insights";
-import { organizationsRouter } from "./routers/organizations";
-import { tasksRouter } from "./routers/tasks";
-import { analyticsRouter } from "./routers/analytics";
-import { adminsRouter } from "./routers/admins";
+import { usersRouter } from "./routers/users.js";
+import { healthRouter } from "./routers/health.js";
+import { projectsRouter } from "./routers/projects.js";
+import { metricsRouter } from "./routers/metrics.js";
+import { quickTasksRouter } from "./routers/quick-tasks.js";
+import { insightsRouter } from "./routers/insights.js";
+import { organizationsRouter } from "./routers/organizations.js";
+import { tasksRouter } from "./routers/tasks.js";
+import { analyticsRouter } from "./routers/analytics.js";
+import { adminsRouter } from "./routers/admins.js";
 
 // Combined router - this is the source of truth for all API routes
 export const router = {
@@ -37,14 +37,14 @@ export {
   protectedProcedure,
   adminProcedure,
   moderatorProcedure,
-} from "./middleware/auth";
+} from "./middleware/auth.js";
 export type {
   AuthContext,
   RequestContext,
   FullContext,
   AuthUser,
   AuthSession,
-} from "./middleware/auth";
+} from "./middleware/auth.js";
 
 // Re-export security middlewares
 export {
@@ -54,4 +54,4 @@ export {
   standardSecurityProcedure,
   publicReadSecurityProcedure,
   publicStandardSecurityProcedure,
-} from "./middleware/security";
+} from "./middleware/security.js";

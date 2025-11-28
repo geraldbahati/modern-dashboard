@@ -5,7 +5,7 @@
 
 import { RPCHandler } from "@orpc/server/fetch";
 import { router, type AuthContext } from "@workspace/api/router";
-import { auth } from "./auth";
+import { auth } from "./auth.js";
 
 // Create RPC handler for oRPC client communication
 // Note: RPCHandler works with RPCLink clients (standard oRPC protocol)
@@ -23,9 +23,7 @@ interface UserWithRole {
 /**
  * Get auth context from request headers
  */
-export async function getAuthContext(
-  headers: Headers
-): Promise<AuthContext> {
+export async function getAuthContext(headers: Headers): Promise<AuthContext> {
   try {
     const session = await auth.api.getSession({ headers });
 

@@ -1,5 +1,5 @@
 import { createMiddleware } from "hono/factory";
-import { auth, type User, type Session } from "../lib/auth";
+import { auth, type User, type Session } from "../lib/auth.js";
 
 // Types for auth context
 export type AuthVariables = {

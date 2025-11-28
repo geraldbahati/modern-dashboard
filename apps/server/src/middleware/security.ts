@@ -4,8 +4,9 @@
  */
 
 import { createMiddleware } from "hono/factory";
-import { createAuthArcjet, createApiArcjet } from "@workspace/security/bun";
-import type { AuthVariables } from "./auth";
+import { createAuthArcjet, createApiArcjet } from "@workspace/security/node";
+import type { AuthVariables } from "./auth.js";
+import type { IncomingMessage } from "node:http";
 
 const ARCJET_KEY = process.env.ARCJET_KEY;
 
@@ -29,7 +30,7 @@ export const authSecurityMiddleware = createMiddleware<{
   const user = c.get("user");
   const userId = user?.id || "anonymous";
 
-  const decision = await authArcjet.protect(c.req.raw, { userId });
+  const decision = await authArcjet.protect(c.req.raw as unknown as IncomingMessage, { userId });
 
   if (decision.isDenied()) {
     return c.json(
@@ -39,7 +40,7 @@ export const authSecurityMiddleware = createMiddleware<{
           ? "Too many requests"
           : "Access denied",
       },
-      403
+      403,
     );
   }
 
@@ -62,7 +63,7 @@ export const apiSecurityMiddleware = createMiddleware<{
   const user = c.get("user");
   const userId = user?.id || "anonymous";
 
-  const decision = await apiArcjet.protect(c.req.raw, { userId });
+  const decision = await apiArcjet.protect(c.req.raw as unknown as IncomingMessage, { userId });
 
   if (decision.isDenied()) {
     return c.json(
@@ -72,7 +73,7 @@ export const apiSecurityMiddleware = createMiddleware<{
           ? "Too many requests"
           : "Access denied",
       },
-      403
+      403,
     );
   }
 

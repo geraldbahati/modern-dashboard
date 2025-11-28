@@ -8,7 +8,8 @@
   },
   "dependencies": {
     "@arcjet/bun": "^1.0.0-alpha.34",
-    "@arcjet/next": "^1.0.0-alpha.34"
+    "@arcjet/next": "^1.0.0-alpha.34",
+    "@arcjet/node": "^1.0.0-alpha.34"
   },
   "devDependencies": {
     "@types/node": "^20.19.9",
@@ -18,6 +19,7 @@
   "exports": {
     "./rules": "./src/rules.ts",
     "./bun": "./src/bun.ts",
+    "./node": "./src/node.ts",
     "./next": "./src/next.ts"
   }
 }

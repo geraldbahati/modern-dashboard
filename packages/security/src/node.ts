@@ -1,9 +1,9 @@
 /**
- * Arcjet security for Bun/Hono applications
- * Import from "@workspace/security/bun"
+ * Arcjet security for Node.js/Hono applications
+ * Import from "@workspace/security/node"
  */
 
-import arcjet, { shield, detectBot, fixedWindow, slidingWindow } from "@arcjet/bun";
+import arcjet, { shield, detectBot, fixedWindow, slidingWindow } from "@arcjet/node";
 import {
   shieldConfig,
   authRateLimitConfig,
@@ -16,7 +16,7 @@ import {
 export * from "./rules.js";
 
 /**
- * Create base Arcjet client for Bun/Hono
+ * Create base Arcjet client for Node.js/Hono
  */
 export const createArcjet = (key: string) => {
   return arcjet({

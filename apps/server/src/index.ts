@@ -1,18 +1,18 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
-import { auth } from "./lib/auth";
-import { rpcHandler, getAuthContext } from "./lib/rpc";
-import { dbMiddleware, type DbVariables } from "./lib/db";
+import { auth } from "./lib/auth.js";
+import { rpcHandler, getAuthContext } from "./lib/rpc.js";
+import { dbMiddleware, type DbVariables } from "./lib/db.js";
 import {
   sessionMiddleware,
   requireAuth,
   type AuthVariables,
-} from "./middleware/auth";
+} from "./middleware/auth.js";
 import {
   authSecurityMiddleware,
   apiSecurityMiddleware,
-} from "./middleware/security";
+} from "./middleware/security.js";
 
 // Combined app variables
 type AppVariables = DbVariables & AuthVariables;
@@ -30,7 +30,7 @@ app.use(
     allowHeaders: ["Content-Type", "Authorization"],
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
-  })
+  }),
 );
 
 // Database middleware

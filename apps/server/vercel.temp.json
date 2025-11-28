@@ -1,4 +1,7 @@
 {
+  "buildCommand": "tsc --noEmit",
+  "outputDirectory": "api",
+  "framework": null,
   "rewrites": [
     {
       "source": "/(.*)",

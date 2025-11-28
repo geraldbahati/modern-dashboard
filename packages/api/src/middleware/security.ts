@@ -10,8 +10,9 @@ import {
   readRateLimitConfig,
   writeRateLimitConfig,
   heavyWriteRateLimitConfig,
-} from "@workspace/security/bun";
-import { publicProcedure, protectedProcedure } from "./auth";
+} from "@workspace/security/node";
+import { publicProcedure, protectedProcedure } from "./auth.js";
+import type { IncomingMessage } from "node:http";
 
 // Get Arcjet key from environment
 const ARCJET_KEY = process.env.ARCJET_KEY || "";
@@ -62,7 +63,7 @@ const standardArcjet = baseArcjet;
  */
 export const readSecurityProcedure = protectedProcedure.use(
   async ({ context, next }) => {
-    const decision = await readArcjet.protect(context.request, {
+    const decision = await readArcjet.protect(context.request as unknown as IncomingMessage, {
       userId: context.user.id,
     });
 
@@ -100,7 +101,7 @@ export const readSecurityProcedure = protectedProcedure.use(
  */
 export const writeSecurityProcedure = protectedProcedure.use(
   async ({ context, next }) => {
-    const decision = await writeArcjet.protect(context.request, {
+    const decision = await writeArcjet.protect(context.request as unknown as IncomingMessage, {
       userId: context.user.id,
     });
 
@@ -138,7 +139,7 @@ export const writeSecurityProcedure = protectedProcedure.use(
  */
 export const heavyWriteSecurityProcedure = protectedProcedure.use(
   async ({ context, next }) => {
-    const decision = await heavyWriteArcjet.protect(context.request, {
+    const decision = await heavyWriteArcjet.protect(context.request as unknown as IncomingMessage, {
       userId: context.user.id,
     });
 
@@ -176,7 +177,7 @@ export const heavyWriteSecurityProcedure = protectedProcedure.use(
  */
 export const standardSecurityProcedure = protectedProcedure.use(
   async ({ context, next }) => {
-    const decision = await standardArcjet.protect(context.request, {
+    const decision = await standardArcjet.protect(context.request as unknown as IncomingMessage, {
       userId: context.user.id,
     });
 
@@ -213,7 +214,7 @@ export const standardSecurityProcedure = protectedProcedure.use(
 export const publicReadSecurityProcedure = publicProcedure.use(
   async ({ context, next }) => {
     // For public routes, use anonymous userId since we can't identify the user
-    const decision = await readArcjet.protect(context.request, {
+    const decision = await readArcjet.protect(context.request as unknown as IncomingMessage, {
       userId: "anonymous",
     });
 
@@ -251,7 +252,7 @@ export const publicReadSecurityProcedure = publicProcedure.use(
  */
 export const publicStandardSecurityProcedure = publicProcedure.use(
   async ({ context, next }) => {
-    const decision = await standardArcjet.protect(context.request, {
+    const decision = await standardArcjet.protect(context.request as unknown as IncomingMessage, {
       userId: "anonymous",
     });
 

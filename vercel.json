@@ -1,4 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD ./"
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD ./",
+  "buildCommand": "cd apps/web && pnpm run build",
+  "outputDirectory": "apps/web/.next"
 }

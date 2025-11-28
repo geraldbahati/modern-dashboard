@@ -4,8 +4,8 @@
 
 import { z } from "zod";
 import { sql, count, eq, and, gte } from "drizzle-orm";
-import { readSecurityProcedure } from "../middleware/security";
-import { protectedProcedure } from "../middleware/auth";
+import { readSecurityProcedure } from "../middleware/security.js";
+import { protectedProcedure } from "../middleware/auth.js";
 import { authDb } from "@workspace/db/auth-db";
 import * as authSchema from "@workspace/db/auth-db/schema";
 import { appDb } from "@workspace/db/app-db";

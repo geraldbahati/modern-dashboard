@@ -2,12 +2,12 @@
  * Insights Router - Analytics data for dashboard insights widget
  */
 
-import { readSecurityProcedure } from "../middleware/security";
+import { readSecurityProcedure } from "../middleware/security.js";
 import {
   insightsAnalyticsSchema,
   insightsPerformanceSchema,
   insightsTrendsSchema,
-} from "../schemas";
+} from "../schemas/index.js";
 
 /**
  * Get all insights analytics data (performance + trends)

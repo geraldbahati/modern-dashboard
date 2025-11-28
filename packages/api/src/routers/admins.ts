@@ -6,8 +6,8 @@ import { eq, ilike, or, and, sql, inArray, not } from "drizzle-orm";
 import { z } from "zod";
 import { authDb } from "@workspace/db/auth-db";
 import * as schema from "@workspace/db/auth-db/schema";
-import { adminProcedure } from "../middleware/auth";
-import { paginationSchema, userSchema } from "../schemas";
+import { adminProcedure } from "../middleware/auth.js";
+import { paginationSchema, userSchema } from "../schemas/index.js";
 
 // Enhanced list schema for admins
 const listAdminsSchema = paginationSchema.extend({

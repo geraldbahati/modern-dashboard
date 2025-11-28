@@ -3,8 +3,8 @@
  */
 
 import { sql, count, gte, and, eq } from "drizzle-orm";
-import { publicReadSecurityProcedure } from "../middleware/security";
-import { dashboardMetricsSchema, type MetricTrend } from "../schemas";
+import { publicReadSecurityProcedure } from "../middleware/security.js";
+import { dashboardMetricsSchema, type MetricTrend } from "../schemas/index.js";
 import { authDb } from "@workspace/db/auth-db";
 import * as authSchema from "@workspace/db/auth-db/schema";
 import { appDb } from "@workspace/db/app-db";

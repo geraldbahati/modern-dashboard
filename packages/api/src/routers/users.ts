@@ -10,12 +10,12 @@ import {
   publicProcedure,
   protectedProcedure,
   adminProcedure,
-} from "../middleware/auth";
+} from "../middleware/auth.js";
 import {
   paginationSchema,
   userSchema,
   idSchema,
-} from "../schemas";
+} from "../schemas/index.js";
 
 // Enhanced list schema with comprehensive filters for the frontend
 const listUsersSchema = paginationSchema.extend({

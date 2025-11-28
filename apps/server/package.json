@@ -5,13 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "bun run --hot --port 3001 src/index.ts",
-    "build": "bun build src/index.ts --outdir dist --target bun",
-    "start": "bun run --port 3001 dist/index.js",
-    "lint": "eslint .",
-    "db:push": "drizzle-kit push",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "dev:vercel": "vercel dev",
+    "build": "tsc --noEmit",
+    "deploy": "vercel deploy",
+    "start": "bun run --port 3001 src/index.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
@@ -23,7 +20,7 @@
     "@workspace/security": "workspace:*",
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.44.7",
-    "hono": "^4.10.6"
+    "hono": "^4.10.7"
   },
   "devDependencies": {
     "@types/bun": "latest",

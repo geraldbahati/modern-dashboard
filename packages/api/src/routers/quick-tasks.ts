@@ -10,13 +10,13 @@ import { quickTasks } from "@workspace/db/app-db/schema";
 import {
   readSecurityProcedure,
   writeSecurityProcedure,
-} from "../middleware/security";
+} from "../middleware/security.js";
 import {
   quickTaskSchema,
   createQuickTaskSchema,
   updateQuickTaskSchema,
   type QuickTask,
-} from "../schemas";
+} from "../schemas/index.js";
 
 // Helper to cast database result to typed QuickTask
 const toQuickTask = (row: typeof quickTasks.$inferSelect): QuickTask => ({

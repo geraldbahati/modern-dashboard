@@ -8,8 +8,8 @@ import { authDb } from "@workspace/db/auth-db";
 import * as schema from "@workspace/db/auth-db/schema";
 import {
   protectedProcedure,
-} from "../middleware/auth";
-import { paginationSchema, idSchema } from "../schemas";
+} from "../middleware/auth.js";
+import { paginationSchema, idSchema } from "../schemas/index.js";
 
 // Enhanced list schema with search
 const listOrganizationsSchema = paginationSchema.extend({

@@ -11,14 +11,14 @@ import {
   readSecurityProcedure,
   writeSecurityProcedure,
   heavyWriteSecurityProcedure,
-} from "../middleware/security";
+} from "../middleware/security.js";
 import {
   paginationSchema,
   projectSchema,
   createProjectSchema,
   updateProjectSchema,
   type Project,
-} from "../schemas";
+} from "../schemas/index.js";
 
 // Helper to cast database result to typed Project
 const toProject = (row: typeof projects.$inferSelect): Project => ({

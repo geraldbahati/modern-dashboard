@@ -10,8 +10,8 @@ import { tasks, projects } from "@workspace/db/app-db/schema";
 import {
   readSecurityProcedure,
   writeSecurityProcedure,
-} from "../middleware/security";
-import { paginationSchema } from "../schemas";
+} from "../middleware/security.js";
+import { paginationSchema } from "../schemas/index.js";
 
 // Task schema for output
 const taskSchema = z.object({

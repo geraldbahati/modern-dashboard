@@ -4,7 +4,7 @@
  */
 
 import { z } from "zod";
-import { publicProcedure, adminProcedure } from "../middleware/auth";
+import { publicProcedure, adminProcedure } from "../middleware/auth.js";
 import { authDb } from "@workspace/db/auth-db";
 import { sql } from "drizzle-orm";
 
