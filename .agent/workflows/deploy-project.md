@@ -57,6 +57,51 @@ docker run -p 3001:3001 modern-dashboard-server
 3.  When asked for the Dockerfile, specify `apps/server/Dockerfile`.
 4.  Follow the prompts.
 
+## 3. CLI Deployment & Remote Caching (Optional)
+
+Since you are logged into Turbo and Vercel, you can set up Remote Caching and deploy via CLI.
+
+### Remote Caching (TurboRepo)
+
+Link your local project to your Vercel/Turbo remote cache to speed up builds.
+
+```bash
+npx turbo link
+```
+
+Follow the prompts to select your Vercel scope.
+
+### Vercel CLI Deployment
+
+To deploy the web app directly from your terminal:
+
+> [!NOTE]
+> Do not run `turbo deploy`. TurboRepo does not have a built-in deploy command unless you define it. Use `vercel deploy` instead.
+
+### Vercel CLI Deployment (Recommended Method)
+
+To avoid errors with directory selection and file size limits, **navigate to the app directory first**.
+
+**1. Deploying the Web App:**
+
+```bash
+cd apps/web
+vercel deploy
+```
+
+- **Project Name**: `modern-dashboard-web`
+- **Directory**: It will automatically detect `./` (which is correct because you are inside `apps/web`).
+
+**2. Deploying the Server App:**
+
+```bash
+cd apps/server
+vercel deploy
+```
+
+- **Project Name**: `modern-dashboard-server`
+- **Directory**: It will automatically detect `./`.
+
 ## Troubleshooting
 
 - **Docker Build Fails**: Ensure you are running the build from the **root** of the monorepo, not inside `apps/server`.

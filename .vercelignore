@@ -1,0 +1,8 @@
+# Vercel Ignore
+node_modules
+.git
+.turbo
+dist
+.next
+apps/web/.next
+apps/server/dist
