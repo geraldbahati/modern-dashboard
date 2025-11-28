@@ -13,13 +13,7 @@ import {
   ReasoningContent,
   ReasoningTrigger,
 } from "@workspace/ui/components/ai-elements/reasoning";
-import {
-  Tool,
-  ToolContent,
-  ToolHeader,
-  ToolInput,
-  ToolOutput,
-} from "@workspace/ui/components/ai-elements/tool";
+
 import {
   Message,
   MessageContent,
@@ -314,19 +308,6 @@ export function AiAssistantView() {
 
                       return (
                         <div key={partIndex} className="flex flex-col gap-2">
-                          <Tool defaultOpen={false}>
-                            <ToolHeader
-                              type={toolPart.type}
-                              state={toolPart.state}
-                            />
-                            <ToolContent>
-                              <ToolInput input={toolPart.input} />
-                              <ToolOutput
-                                output={toolPart.output}
-                                errorText={toolPart.errorText}
-                              />
-                            </ToolContent>
-                          </Tool>
                           {(() => {
                             const ToolComponent = getToolComponent(toolName);
                             if (

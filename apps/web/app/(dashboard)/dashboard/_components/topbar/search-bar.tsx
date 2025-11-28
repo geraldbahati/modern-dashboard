@@ -11,6 +11,7 @@ import {
   Users,
   X,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import {
   Dialog,
@@ -35,42 +36,40 @@ const items = [
     title: "Overview",
     description: "Dashboard overview with key metrics and project status",
     type: "Pages",
+    href: "/dashboard",
   },
   {
     icon: Bot,
     title: "AI Assistant",
     description: "Chat with AI assistant powered by multiple LLM providers",
     type: "Tools",
+    href: "/dashboard/ai-assistant",
   },
   {
     icon: Users,
     title: "Users",
     description: "Manage platform users and accounts",
     type: "Pages",
-  },
-  {
-    icon: Layers,
-    title: "All",
-    description: "All active users in the system",
-    type: "Pages",
-  },
-  {
-    icon: Trash,
-    title: "Deleted",
-    description: "Deleted or deactivated users",
-    type: "Pages",
+    href: "/dashboard/users",
   },
   {
     icon: Folder,
     title: "Projects",
     description: "Manage development projects and deployments",
     type: "Pages",
+    href: "/dashboard/projects",
   },
 ];
 
-export default function SearchBar({ className, open: controlledOpen, onOpenChange }: SearchBarProps) {
+export default function SearchBar({
+  className,
+  open: controlledOpen,
+  onOpenChange,
+}: SearchBarProps) {
   const [internalOpen, setInternalOpen] = React.useState(false);
   const [selectedIndex, setSelectedIndex] = React.useState(0);
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const router = useRouter();
 
   // Use controlled state if provided, otherwise use internal state
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
@@ -87,24 +86,40 @@ export default function SearchBar({ className, open: controlledOpen, onOpenChang
     return () => document.removeEventListener("keydown", down);
   }, [open, setOpen]);
 
+  const filteredItems = React.useMemo(() => {
+    if (!searchQuery) return items;
+    return items.filter(
+      (item) =>
+        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.description.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [searchQuery]);
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setSelectedIndex((prev) => (prev + 1) % items.length);
+      setSelectedIndex((prev) => (prev + 1) % filteredItems.length);
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setSelectedIndex((prev) => (prev - 1 + items.length) % items.length);
+      setSelectedIndex(
+        (prev) => (prev - 1 + filteredItems.length) % filteredItems.length
+      );
     } else if (e.key === "Enter") {
       e.preventDefault();
       // Handle navigation here
-      console.log("Navigating to:", items[selectedIndex]?.title);
-      setOpen(false);
+      if (filteredItems[selectedIndex]) {
+        router.push(filteredItems[selectedIndex].href);
+        setOpen(false);
+      }
     }
   };
 
   // Reset selection when opening
   React.useEffect(() => {
-    if (open) setSelectedIndex(0);
+    if (open) {
+      setSelectedIndex(0);
+      setSearchQuery("");
+    }
   }, [open]);
 
   return (
@@ -138,6 +153,11 @@ export default function SearchBar({ className, open: controlledOpen, onOpenChang
           <input
             className="placeholder:text-muted-foreground flex h-6 w-full rounded-md bg-transparent text-sm outline-none"
             placeholder="Search for anything..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setSelectedIndex(0);
+            }}
           />
           <button
             onClick={() => setOpen(false)}
@@ -149,12 +169,24 @@ export default function SearchBar({ className, open: controlledOpen, onOpenChang
         </div>
         <ScrollArea className="h-[400px]">
           <div className="p-2">
-            {items.map((item, index) => (
+            {filteredItems.length === 0 && (
+              <div className="py-14 text-center text-sm sm:px-14">
+                <Search className="mx-auto h-6 w-6 text-muted-foreground" />
+                <p className="mt-4 font-semibold text-foreground">
+                  No results found
+                </p>
+                <p className="mt-2 text-muted-foreground">
+                  No components found for &quot;{searchQuery}&quot;. Please try
+                  searching for something else.
+                </p>
+              </div>
+            )}
+            {filteredItems.map((item, index) => (
               <div
                 key={index}
                 onMouseEnter={() => setSelectedIndex(index)}
                 onClick={() => {
-                  console.log("Navigating to:", item.title);
+                  router.push(item.href);
                   setOpen(false);
                 }}
                 className={cn(
@@ -199,7 +231,7 @@ export default function SearchBar({ className, open: controlledOpen, onOpenChang
           </div>
           <div className="ml-4 border-l pl-4">
             Search by{" "}
-            <span className="text-foreground font-medium">Aniq-ui</span>
+            <span className="text-foreground font-medium">Bahati-ui</span>
           </div>
         </div>
       </DialogContent>

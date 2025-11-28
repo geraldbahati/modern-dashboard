@@ -15,7 +15,12 @@ export function TopBar() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   return (
-    <div className={cn("fixed top-0 left-0 right-0 flex h-[5.25rem] items-center px-4 w-full pointer-events-none bg-background/80 backdrop-blur-md", isSearchOpen && "z-[60]")}>
+    <div
+      className={cn(
+        "fixed top-0 left-0 right-0 flex h-[5.25rem] items-center px-4 w-full pointer-events-none bg-background/80 backdrop-blur-md",
+        isSearchOpen && "z-[60]"
+      )}
+    >
       <header className="bg-sidebar relative flex h-16 w-full items-center rounded-2xl border px-4 shadow-sm overflow-hidden pointer-events-auto">
         <div
           className="absolute inset-0 pointer-events-none"
@@ -31,7 +36,7 @@ export function TopBar() {
             <div className="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-lg">
               <div className="size-4 rounded-sm bg-current" />
             </div>
-            <span className="hidden md:inline-block">Aniq-ui</span>
+            <span className="hidden md:inline-block">Bahati-ui</span>
           </div>
         </div>
 
