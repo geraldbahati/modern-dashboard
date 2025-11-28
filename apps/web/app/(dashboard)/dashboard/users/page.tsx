@@ -5,8 +5,8 @@ import { Button } from "@workspace/ui/components/button";
 import { UsersMetrics } from "./_components/users-metrics";
 import { UsersTable } from "./_components/users-table";
 import { UsersFilters } from "./_components/users-filters";
-import { MetricsSkeleton } from "./_components/metrics-skeleton";
-import { TableSkeleton } from "./_components/table-skeleton";
+import { MetricsSkeleton } from "../_components/metrics-skeleton";
+import { TableSkeleton } from "../_components/table-skeleton";
 
 export const metadata: Metadata = {
   title: "Users Management | Dashboard",

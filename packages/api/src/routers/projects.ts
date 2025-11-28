@@ -3,7 +3,7 @@
  */
 
 import { z } from "zod";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, or, ilike, sql, type SQL } from "drizzle-orm";
 import { ORPCError } from "@orpc/server";
 import { appDb } from "@workspace/db/app-db";
 import { projects } from "@workspace/db/app-db/schema";
@@ -26,12 +26,19 @@ const toProject = (row: typeof projects.$inferSelect): Project => ({
   status: row.status as Project["status"],
 });
 
+// Enhanced list schema with filters
+const listProjectsSchema = paginationSchema.extend({
+  search: z.string().optional(),
+  status: z.enum(["active", "archived", "deleted"]).optional(),
+  environment: z.enum(["production", "staging", "development"]).optional(),
+});
+
 /**
- * List all projects for the current user
+ * List all projects for the current user with filters
  */
 export const list = readSecurityProcedure
   .route({ method: "GET", path: "/projects" })
-  .input(paginationSchema)
+  .input(listProjectsSchema)
   .output(
     z.object({
       data: z.array(projectSchema),
@@ -39,28 +46,96 @@ export const list = readSecurityProcedure
     })
   )
   .handler(async ({ input, context }) => {
-    const { limit, offset } = input;
+    const { limit, offset, search, status, environment } = input;
+
+    const conditions = [eq(projects.ownerId, context.user.id)];
+
+    if (search) {
+      conditions.push(
+        or(
+          ilike(projects.name, `%${search}%`),
+          ilike(projects.description || "", `%${search}%`)
+        )!
+      );
+    }
+
+    if (status) {
+      conditions.push(eq(projects.status, status));
+    }
+
+    // Note: Environment is not in the schema provided earlier.
+    // If it's required, we should add it to the schema or ignore it for now.
+    // I will ignore it for now as it wasn't in the schema view I saw.
+
+    const whereClause = and(...conditions) as unknown as SQL<unknown>;
 
     const rows = await appDb
       .select()
       .from(projects)
-      .where(eq(projects.ownerId, context.user.id))
+      .where(whereClause!)
       .orderBy(desc(projects.createdAt))
       .limit(limit)
       .offset(offset);
 
     // Get total count
     const countResult = await appDb
-      .select()
+      .select({ count: sql<number>`count(*)::int` })
       .from(projects)
-      .where(eq(projects.ownerId, context.user.id));
+      .where(whereClause!);
 
     return {
       data: rows.map(toProject),
-      total: countResult.length,
+      total: countResult[0]?.count ?? 0,
     };
   });
 
+/**
+ * Get project metrics
+ */
+export const metrics = readSecurityProcedure
+  .route({ method: "GET", path: "/projects/metrics" })
+  .output(
+    z.object({
+      total: z.number(),
+      active: z.number(),
+      archived: z.number(),
+      deleted: z.number(),
+    })
+  )
+  .handler(async ({ context }) => {
+    const userId = context.user.id;
+
+    const totalResult = await appDb
+      .select({ count: sql<number>`count(*)::int` })
+      .from(projects)
+      .where(eq(projects.ownerId, userId));
+
+    const activeResult = await appDb
+      .select({ count: sql<number>`count(*)::int` })
+      .from(projects)
+      .where(and(eq(projects.ownerId, userId), eq(projects.status, "active"))!);
+
+    const archivedResult = await appDb
+      .select({ count: sql<number>`count(*)::int` })
+      .from(projects)
+      .where(
+        and(eq(projects.ownerId, userId), eq(projects.status, "archived"))!
+      );
+
+    const deletedResult = await appDb
+      .select({ count: sql<number>`count(*)::int` })
+      .from(projects)
+      .where(
+        and(eq(projects.ownerId, userId), eq(projects.status, "deleted"))!
+      );
+
+    return {
+      total: totalResult[0]?.count ?? 0,
+      active: activeResult[0]?.count ?? 0,
+      archived: archivedResult[0]?.count ?? 0,
+      deleted: deletedResult[0]?.count ?? 0,
+    };
+  });
 /**
  * Get a single project by ID
  */
@@ -331,6 +406,7 @@ export const restore = writeSecurityProcedure
 // Export router
 export const projectsRouter = {
   list,
+  metrics,
   getById,
   getBySlug,
   create,

@@ -118,7 +118,11 @@ export const createTaskTools = (client: Client) => ({
     inputSchema: updateTaskSchema,
     execute: async (params) => {
       try {
-        const task = await client.tasks.update(params);
+        const { taskId, ...updateData } = params;
+        const task = await client.tasks.update({
+          id: taskId,
+          ...updateData,
+        });
         return {
           success: true,
           data: task,
@@ -141,7 +145,11 @@ export const createTaskTools = (client: Client) => ({
     inputSchema: changeTaskStatusSchema,
     execute: async (params) => {
       try {
-        const task = await client.tasks.changeStatus(params);
+        const { taskId, status } = params;
+        const task = await client.tasks.changeStatus({
+          id: taskId,
+          status,
+        });
         return {
           success: true,
           data: task,
@@ -245,7 +253,11 @@ export const createTaskTools = (client: Client) => ({
     inputSchema: assignTaskSchema,
     execute: async (params) => {
       try {
-        const task = await client.tasks.assign(params);
+        const { taskId, assigneeId } = params;
+        const task = await client.tasks.assign({
+          id: taskId,
+          assigneeId,
+        });
         return {
           success: true,
           data: task,

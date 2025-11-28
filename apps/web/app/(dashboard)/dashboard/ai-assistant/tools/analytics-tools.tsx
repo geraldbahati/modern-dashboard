@@ -134,19 +134,34 @@ export const UserAnalyticsTool: React.FC<
   // Generate mock chart data for simple analytics format
   const now = new Date();
   const activity = Array.from({ length: 30 }, (_, i) => ({
-    date: new Date(now.getTime() - (29 - i) * 24 * 60 * 60 * 1000).toISOString().split("T")[0]!,
+    date: new Date(now.getTime() - (29 - i) * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0]!,
     tasks: Math.floor(Math.random() * 5),
   }));
 
   const taskDistribution = [
-    { name: "Todo", value: Math.floor((data.tasksCreated - data.tasksCompleted) * 0.4), color: "hsl(var(--muted-foreground))" },
-    { name: "In Progress", value: Math.floor((data.tasksCreated - data.tasksCompleted) * 0.6), color: "hsl(var(--blue-500))" },
-    { name: "Done", value: data.tasksCompleted, color: "hsl(var(--green-500))" },
+    {
+      name: "Todo",
+      value: Math.floor((data.tasksCreated - data.tasksCompleted) * 0.4),
+      color: "hsl(var(--muted-foreground))",
+    },
+    {
+      name: "In Progress",
+      value: Math.floor((data.tasksCreated - data.tasksCompleted) * 0.6),
+      color: "hsl(var(--blue-500))",
+    },
+    {
+      name: "Done",
+      value: data.tasksCompleted,
+      color: "hsl(var(--green-500))",
+    },
   ];
 
   const performance = Array.from({ length: 4 }, (_, i) => ({
     week: `Week ${i + 1}`,
-    completed: Math.floor(data.tasksCompleted / 4) + Math.floor(Math.random() * 3),
+    completed:
+      Math.floor(data.tasksCompleted / 4) + Math.floor(Math.random() * 3),
     assigned: Math.floor(data.tasksCreated / 4) + Math.floor(Math.random() * 3),
   }));
 
@@ -173,15 +188,63 @@ export const ProjectAnalyticsTool: React.FC<
 
   const data = result.data;
 
+  // Generate mock burndown data
+  const now = new Date();
+  const burndown = Array.from({ length: 7 }, (_, i) => ({
+    date: new Date(now.getTime() - (6 - i) * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0]!,
+    remaining: Math.max(
+      0,
+      (data.totalTasks ?? 0) - Math.floor(((data.completedTasks ?? 0) / 7) * i)
+    ),
+  }));
+
+  // Generate task distribution
+  const taskDistribution = [
+    {
+      name: "Todo",
+      value: data.todoTasks ?? 0,
+      color: "hsl(var(--muted-foreground))",
+    },
+    {
+      name: "In Progress",
+      value: data.inProgressTasks ?? 0,
+      color: "hsl(var(--blue-500))",
+    },
+    {
+      name: "Done",
+      value: data.completedTasks ?? 0,
+      color: "hsl(var(--green-500))",
+    },
+  ];
+
+  // Generate mock team velocity
+  const teamVelocity = [
+    {
+      member: "Team A",
+      completed: Math.floor((data.completedTasks ?? 0) * 0.4),
+    },
+    {
+      member: "Team B",
+      completed: Math.floor((data.completedTasks ?? 0) * 0.3),
+    },
+    {
+      member: "Team C",
+      completed: Math.floor((data.completedTasks ?? 0) * 0.3),
+    },
+  ];
+
   const stats = {
-    totalTasks: data.totalTasks ?? 0,
-    completedTasks: data.completedTasks ?? 0,
-    inProgressTasks: data.inProgressTasks ?? 0,
-    todoTasks: data.todoTasks ?? 0,
-    completionRate: data.completionRate ?? 0,
-    velocity: data.velocity ?? 0,
-    averageCompletionTime: data.averageCompletionTime ?? 0,
-    overduePercentage: data.overduePercentage ?? 0,
+    burndown,
+    taskDistribution,
+    teamVelocity,
+    metrics: {
+      velocity: data.velocity ?? 0,
+      efficiency: data.completionRate ?? 0,
+      onTimeCompletionRate: 100 - (data.overduePercentage ?? 0),
+      avgTaskDuration: data.averageCompletionTime ?? 0,
+    },
   };
 
   return <ProjectStats stats={stats} />;
@@ -215,7 +278,14 @@ export const DashboardMetricsTool: React.FC<
 
 // Task Distribution Tool
 export const TaskDistributionTool: React.FC<
-  ToolComponentProps<{ data: { todo: number; inProgress: number; done: number; byPriority: { low: number; medium: number; high: number } } }>
+  ToolComponentProps<{
+    data: {
+      todo: number;
+      inProgress: number;
+      done: number;
+      byPriority: { low: number; medium: number; high: number };
+    };
+  }>
 > = ({ tool, result }) => {
   if (tool.state !== "output-available" || !result || !result.data) return null;
 
@@ -254,15 +324,21 @@ export const TaskDistributionTool: React.FC<
             <div className="mt-2 space-y-2">
               <div className="flex justify-between">
                 <span className="text-sm">High:</span>
-                <span className="font-medium text-destructive">{data.byPriority?.high ?? 0}</span>
+                <span className="font-medium text-destructive">
+                  {data.byPriority?.high ?? 0}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm">Medium:</span>
-                <span className="font-medium text-yellow-500">{data.byPriority?.medium ?? 0}</span>
+                <span className="font-medium text-yellow-500">
+                  {data.byPriority?.medium ?? 0}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm">Low:</span>
-                <span className="font-medium text-muted-foreground">{data.byPriority?.low ?? 0}</span>
+                <span className="font-medium text-muted-foreground">
+                  {data.byPriority?.low ?? 0}
+                </span>
               </div>
             </div>
           </div>
@@ -312,7 +388,10 @@ interface InsightsResult {
 }
 
 // Insights Tool
-export const InsightsTool: React.FC<ToolComponentProps<InsightsResult>> = ({ tool, result }) => {
+export const InsightsTool: React.FC<ToolComponentProps<InsightsResult>> = ({
+  tool,
+  result,
+}) => {
   if (tool.state !== "output-available" || !result || !result.data) return null;
 
   const { performance, trends } = result.data;
@@ -347,8 +426,12 @@ export const InsightsTool: React.FC<ToolComponentProps<InsightsResult>> = ({ too
       <div className="rounded-lg border bg-card p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Performance Insights</h3>
-          <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${getScoreBg(performance?.overallScore ?? 0)}`}>
-            <span className={`text-2xl font-bold ${getScoreColor(performance?.overallScore ?? 0)}`}>
+          <div
+            className={`flex items-center gap-2 px-3 py-1 rounded-full ${getScoreBg(performance?.overallScore ?? 0)}`}
+          >
+            <span
+              className={`text-2xl font-bold ${getScoreColor(performance?.overallScore ?? 0)}`}
+            >
               {performance?.overallScore ?? 0}
             </span>
             <span className="text-xs text-muted-foreground">/100</span>
@@ -359,16 +442,26 @@ export const InsightsTool: React.FC<ToolComponentProps<InsightsResult>> = ({ too
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Task Completion</p>
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold">{performance?.taskCompletion?.value ?? 0}%</span>
-              <span className={getTrendColor(performance?.taskCompletion?.trend ?? "neutral")}>
+              <span className="text-2xl font-bold">
+                {performance?.taskCompletion?.value ?? 0}%
+              </span>
+              <span
+                className={getTrendColor(
+                  performance?.taskCompletion?.trend ?? "neutral"
+                )}
+              >
                 {getTrendIcon(performance?.taskCompletion?.trend ?? "neutral")}
               </span>
             </div>
-            <span className={`text-xs px-2 py-0.5 rounded-full ${
-              performance?.taskCompletion?.status === "good" ? "bg-green-500/10 text-green-500" :
-              performance?.taskCompletion?.status === "warning" ? "bg-yellow-500/10 text-yellow-500" :
-              "bg-destructive/10 text-destructive"
-            }`}>
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full ${
+                performance?.taskCompletion?.status === "good"
+                  ? "bg-green-500/10 text-green-500"
+                  : performance?.taskCompletion?.status === "warning"
+                    ? "bg-yellow-500/10 text-yellow-500"
+                    : "bg-destructive/10 text-destructive"
+              }`}
+            >
               {performance?.taskCompletion?.status ?? "unknown"}
             </span>
           </div>
@@ -376,16 +469,26 @@ export const InsightsTool: React.FC<ToolComponentProps<InsightsResult>> = ({ too
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">User Engagement</p>
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold">{performance?.userEngagement?.value ?? 0}%</span>
-              <span className={getTrendColor(performance?.userEngagement?.trend ?? "neutral")}>
+              <span className="text-2xl font-bold">
+                {performance?.userEngagement?.value ?? 0}%
+              </span>
+              <span
+                className={getTrendColor(
+                  performance?.userEngagement?.trend ?? "neutral"
+                )}
+              >
                 {getTrendIcon(performance?.userEngagement?.trend ?? "neutral")}
               </span>
             </div>
-            <span className={`text-xs px-2 py-0.5 rounded-full ${
-              performance?.userEngagement?.status === "good" ? "bg-green-500/10 text-green-500" :
-              performance?.userEngagement?.status === "warning" ? "bg-yellow-500/10 text-yellow-500" :
-              "bg-destructive/10 text-destructive"
-            }`}>
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full ${
+                performance?.userEngagement?.status === "good"
+                  ? "bg-green-500/10 text-green-500"
+                  : performance?.userEngagement?.status === "warning"
+                    ? "bg-yellow-500/10 text-yellow-500"
+                    : "bg-destructive/10 text-destructive"
+              }`}
+            >
               {performance?.userEngagement?.status ?? "unknown"}
             </span>
           </div>
@@ -393,16 +496,26 @@ export const InsightsTool: React.FC<ToolComponentProps<InsightsResult>> = ({ too
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Avg Response Time</p>
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold">{performance?.responseTime?.value ?? 0}h</span>
-              <span className={getTrendColor(performance?.responseTime?.trend ?? "neutral")}>
+              <span className="text-2xl font-bold">
+                {performance?.responseTime?.value ?? 0}h
+              </span>
+              <span
+                className={getTrendColor(
+                  performance?.responseTime?.trend ?? "neutral"
+                )}
+              >
                 {getTrendIcon(performance?.responseTime?.trend ?? "neutral")}
               </span>
             </div>
-            <span className={`text-xs px-2 py-0.5 rounded-full ${
-              performance?.responseTime?.status === "good" ? "bg-green-500/10 text-green-500" :
-              performance?.responseTime?.status === "warning" ? "bg-yellow-500/10 text-yellow-500" :
-              "bg-destructive/10 text-destructive"
-            }`}>
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full ${
+                performance?.responseTime?.status === "good"
+                  ? "bg-green-500/10 text-green-500"
+                  : performance?.responseTime?.status === "warning"
+                    ? "bg-yellow-500/10 text-yellow-500"
+                    : "bg-destructive/10 text-destructive"
+              }`}
+            >
               {performance?.responseTime?.status ?? "unknown"}
             </span>
           </div>
@@ -413,8 +526,12 @@ export const InsightsTool: React.FC<ToolComponentProps<InsightsResult>> = ({ too
       <div className="rounded-lg border bg-card p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Growth Trends</h3>
-          <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${getScoreBg(trends?.overallScore ?? 0)}`}>
-            <span className={`text-2xl font-bold ${getScoreColor(trends?.overallScore ?? 0)}`}>
+          <div
+            className={`flex items-center gap-2 px-3 py-1 rounded-full ${getScoreBg(trends?.overallScore ?? 0)}`}
+          >
+            <span
+              className={`text-2xl font-bold ${getScoreColor(trends?.overallScore ?? 0)}`}
+            >
               {trends?.overallScore ?? 0}
             </span>
             <span className="text-xs text-muted-foreground">/100</span>
@@ -425,8 +542,14 @@ export const InsightsTool: React.FC<ToolComponentProps<InsightsResult>> = ({ too
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">User Growth</p>
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold">{trends?.userGrowth?.value ?? 0}%</span>
-              <span className={getTrendColor(trends?.userGrowth?.trend ?? "neutral")}>
+              <span className="text-2xl font-bold">
+                {trends?.userGrowth?.value ?? 0}%
+              </span>
+              <span
+                className={getTrendColor(
+                  trends?.userGrowth?.trend ?? "neutral"
+                )}
+              >
                 {getTrendIcon(trends?.userGrowth?.trend ?? "neutral")}
               </span>
             </div>
@@ -435,8 +558,14 @@ export const InsightsTool: React.FC<ToolComponentProps<InsightsResult>> = ({ too
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Engagement Rate</p>
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold">{trends?.engagementRate?.value ?? 0}%</span>
-              <span className={getTrendColor(trends?.engagementRate?.trend ?? "neutral")}>
+              <span className="text-2xl font-bold">
+                {trends?.engagementRate?.value ?? 0}%
+              </span>
+              <span
+                className={getTrendColor(
+                  trends?.engagementRate?.trend ?? "neutral"
+                )}
+              >
                 {getTrendIcon(trends?.engagementRate?.trend ?? "neutral")}
               </span>
             </div>
@@ -445,8 +574,12 @@ export const InsightsTool: React.FC<ToolComponentProps<InsightsResult>> = ({ too
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Retention</p>
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold">{trends?.retention?.value ?? 0}%</span>
-              <span className={getTrendColor(trends?.retention?.trend ?? "neutral")}>
+              <span className="text-2xl font-bold">
+                {trends?.retention?.value ?? 0}%
+              </span>
+              <span
+                className={getTrendColor(trends?.retention?.trend ?? "neutral")}
+              >
                 {getTrendIcon(trends?.retention?.trend ?? "neutral")}
               </span>
             </div>
@@ -458,21 +591,27 @@ export const InsightsTool: React.FC<ToolComponentProps<InsightsResult>> = ({ too
 };
 
 // Resource Allocation Tool
-export const ResourceAllocationTool: React.FC<ToolComponentProps<{ data: ResourceAllocationData }>> = ({ tool, result }) => {
+export const ResourceAllocationTool: React.FC<
+  ToolComponentProps<{ data: ResourceAllocationData }>
+> = ({ tool, result }) => {
   if (tool.state !== "output-available" || !result || !result.data) return null;
 
   return <ResourceAllocation data={result.data} />;
 };
 
 // Predictive Analytics Tool
-export const PredictiveAnalyticsTool: React.FC<ToolComponentProps<{ data: PredictiveAnalyticsData }>> = ({ tool, result }) => {
+export const PredictiveAnalyticsTool: React.FC<
+  ToolComponentProps<{ data: PredictiveAnalyticsData }>
+> = ({ tool, result }) => {
   if (tool.state !== "output-available" || !result || !result.data) return null;
 
   return <PredictiveAnalytics data={result.data} />;
 };
 
 // Detailed User Analytics Tool (with full chart data)
-export const UserAnalyticsDetailedTool: React.FC<ToolComponentProps<{ data: UserAnalyticsDetailedData }>> = ({ tool, result }) => {
+export const UserAnalyticsDetailedTool: React.FC<
+  ToolComponentProps<{ data: UserAnalyticsDetailedData }>
+> = ({ tool, result }) => {
   if (tool.state !== "output-available" || !result || !result.data) return null;
 
   return <UserAnalytics stats={result.data} />;
