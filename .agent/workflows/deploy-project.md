@@ -1,110 +1,49 @@
 ---
-description: How to deploy the Turborepo project (Web to Vercel, Server to Docker)
+description: How to deploy the Turborepo project (Web to Vercel, Server to Vercel)
 ---
 
 # Deploying Modern Dashboard
 
-This project is a monorepo with two main applications:
+This project is a monorepo. The **only reliable way** to deploy it to Vercel (handling workspace dependencies correctly) is via **Git Integration**.
 
-1.  **Web App (`apps/web`)**: Next.js application.
-2.  **Server App (`apps/server`)**: Hono application running on Bun.
+> [!IMPORTANT]
+> **Do not use `vercel deploy` CLI** for the server app. It uploads files in isolation, breaking workspace dependencies (like `@workspace/api`).
 
-## 1. Deploying the Web App (Vercel)
+## Prerequisites
 
-The `apps/web` application is optimized for Vercel.
+1.  Push your code to a Git provider (GitHub, GitLab, Bitbucket).
+2.  Log in to the [Vercel Dashboard](https://vercel.com/dashboard).
 
-1.  Push your code to a Git repository (GitHub, GitLab, Bitbucket).
-2.  Import the project into Vercel.
-3.  Vercel should automatically detect the Next.js app.
-4.  **Root Directory**: Keep it as `./`.
-5.  **Framework Preset**: Next.js.
-6.  **Build Command**: `cd apps/web && npx next build` (or let Vercel auto-detect `turbo build`).
-    - _Note_: The `vercel.json` in the root is configured to ignore build steps if only the server changed, optimizing build usage.
-7.  **Environment Variables**: Add your `.env` variables to Vercel.
+## 1. Deploying the Web App (`apps/web`)
 
-## 2. Deploying the Server App (Docker)
+1.  **New Project**: On Vercel, click **"Add New..."** > **"Project"**.
+2.  **Import Git Repository**: Select your `modern-dashboard` repo.
+3.  **Configure Project**:
+    - **Project Name**: `modern-dashboard-web`
+    - **Root Directory**: Click "Edit" and select `apps/web`.
+    - **Framework Preset**: Next.js (Auto-detected).
+4.  **Environment Variables**: Add your `.env` variables.
+5.  **Deploy**: Click **Deploy**.
 
-The `apps/server` application uses Bun. The best way to deploy it is via Docker to preserve the runtime.
+## 2. Deploying the Server App (`apps/server`)
 
-### Prerequisites
+1.  **New Project**: Click **"Add New..."** > **"Project"** (again).
+2.  **Import Git Repository**: Select the **same** `modern-dashboard` repo.
+3.  **Configure Project**:
+    - **Project Name**: `modern-dashboard-server`
+    - **Root Directory**: Click "Edit" and select `apps/server`.
+    - **Framework Preset**: Select **Other**.
+    - **Build Command**: Override and set to `npm run vercel-build` (or `echo 'Skipping build'`).
+      - _Reason_: The default `build` script uses Bun, which Vercel doesn't support. We use the `api/index.ts` entry point instead.
+    - **Output Directory**: Leave default (dist).
+4.  **Environment Variables**: Add your `.env` variables.
+5.  **Deploy**: Click **Deploy**.
 
-- Docker installed and running.
-- A cloud provider that supports Docker (Railway, Fly.io, DigitalOcean, AWS App Runner, etc.).
+## 3. Updating Deployments
 
-### Local Build Test
-
-To test the build locally:
-
-```bash
-docker build -f apps/server/Dockerfile . -t modern-dashboard-server
-docker run -p 3001:3001 modern-dashboard-server
-```
-
-### Deploying to Railway (Example)
-
-1.  Connect your GitHub repo to Railway.
-2.  Add a service from the repo.
-3.  Configure the service:
-    - **Dockerfile Path**: `apps/server/Dockerfile`
-    - **Context**: `/` (Root of the monorepo)
-4.  Add Environment Variables.
-5.  Railway will build and deploy the container.
-
-### Deploying to Fly.io (Example)
-
-1.  Install `flyctl`.
-2.  Run `fly launch` in the root.
-3.  When asked for the Dockerfile, specify `apps/server/Dockerfile`.
-4.  Follow the prompts.
-
-## 3. CLI Deployment & Remote Caching (Optional)
-
-Since you are logged into Turbo and Vercel, you can set up Remote Caching and deploy via CLI.
-
-### Remote Caching (TurboRepo)
-
-Link your local project to your Vercel/Turbo remote cache to speed up builds.
-
-```bash
-npx turbo link
-```
-
-Follow the prompts to select your Vercel scope.
-
-### Vercel CLI Deployment
-
-To deploy the web app directly from your terminal:
-
-> [!NOTE]
-> Do not run `turbo deploy`. TurboRepo does not have a built-in deploy command unless you define it. Use `vercel deploy` instead.
-
-### Vercel CLI Deployment (Recommended Method)
-
-To avoid errors with directory selection and file size limits, **navigate to the app directory first**.
-
-**1. Deploying the Web App:**
-
-```bash
-cd apps/web
-vercel deploy
-```
-
-- **Project Name**: `modern-dashboard-web`
-- **Directory**: It will automatically detect `./` (which is correct because you are inside `apps/web`).
-
-**2. Deploying the Server App:**
-
-```bash
-cd apps/server
-vercel deploy
-```
-
-- **Project Name**: `modern-dashboard-server`
-- **Directory**: It will automatically detect `./`.
+Once set up, every time you `git push` to your main branch, Vercel will automatically redeploy both apps.
 
 ## Troubleshooting
 
-- **Docker Build Fails**: Ensure you are running the build from the **root** of the monorepo, not inside `apps/server`.
-  - Correct: `docker build -f apps/server/Dockerfile .`
-  - Incorrect: `cd apps/server && docker build .`
-- **Missing Dependencies**: The Dockerfile uses `turbo prune` to isolate dependencies. If a package is missing, check if it's correctly listed in `package.json`.
+- **"Unsupported URL Type workspace"**: This happens if you use Vercel CLI from a subdirectory. Use Git Integration as described above.
+- **"File size > 2GB"**: Ensure `.vercelignore` exists in the root (we created this).
