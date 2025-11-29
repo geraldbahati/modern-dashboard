@@ -1,3 +1,5 @@
 {
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "buildCommand": "turbo build",
+  "ignoreCommand": "npx turbo-ignore"
 }
