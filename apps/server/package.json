@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "bun run --hot --port 3001 src/index.ts",
     "dev:vercel": "vercel dev",
-    "build": "bun build src/index.ts --outdir dist --target bun",
+    "build": "echo 'Using Vercel serverless functions - no build needed'",
+    "build:local": "bun build src/index.ts --outdir dist --target bun",
     "deploy": "vercel deploy",
     "start": "bun run --port 3001 dist/index.js"
   },
