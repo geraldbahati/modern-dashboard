@@ -1,5 +1,5 @@
 import { createAuthClient } from "better-auth/react";
-import type { Auth } from "./types";
+import type { Auth } from "./types.js";
 import {
   inferAdditionalFields,
   adminClient,
@@ -14,7 +14,7 @@ import {
   moderator,
   editor,
   user as userRole,
-} from "./permissions";
+} from "./permissions.js";
 
 export const authClient = createAuthClient({
   baseURL: process.env.NEXT_PUBLIC_AUTH_URL || "http://localhost:3000/api/auth",

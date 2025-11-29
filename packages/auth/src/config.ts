@@ -14,14 +14,14 @@ import {
   sendVerificationEmail,
   sendPasswordResetEmail,
   sendOrganizationInvitation,
-} from "./email";
+} from "./email.js";
 import {
   ac,
   admin as adminRole,
   moderator,
   editor,
   user as userRole,
-} from "./permissions";
+} from "./permissions.js";
 
 // Define the input needed from the specific app
 export interface AuthConfigParams {
