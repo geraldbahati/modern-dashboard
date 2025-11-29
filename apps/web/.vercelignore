@@ -1,0 +1,6 @@
+# Allow workspace dependencies to be uploaded
+!../../packages
+!../../pnpm-lock.yaml
+!../../pnpm-workspace.yaml
+!../../turbo.json
+!../../package.json
