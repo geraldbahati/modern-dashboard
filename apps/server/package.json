@@ -6,9 +6,9 @@
   "scripts": {
     "dev": "bun run --hot --port 3001 src/index.ts",
     "dev:vercel": "vercel dev",
-    "build": "bun build src/index.ts --outdir dist",
+    "build": "bun build src/index.ts --outdir dist --target bun",
     "deploy": "vercel deploy",
-    "start": "bun run --port 3001 dict/index.js"
+    "start": "bun run --port 3001 dist/index.js"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
