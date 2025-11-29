@@ -1,0 +1,10 @@
+{
+  "buildCommand": "cd ../.. && pnpm turbo run build --filter=server",
+  "installCommand": "pnpm install",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api"
+    }
+  ]
+}

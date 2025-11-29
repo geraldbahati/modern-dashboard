@@ -11,6 +11,7 @@
     "start": "bun run --port 3001 dist/index.js"
   },
   "dependencies": {
+    "@hono/node-server": "^1.19.6",
     "@neondatabase/serverless": "^1.0.2",
     "@orpc/openapi": "^1.0.0",
     "@orpc/server": "^1.0.0",
