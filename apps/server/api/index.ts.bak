@@ -1,0 +1,4 @@
+// @ts-ignore - Vercel will handle TypeScript compilation
+import app from "../src/index";
+
+export default app;
