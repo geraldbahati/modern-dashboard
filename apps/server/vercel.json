@@ -1,9 +1,3 @@
 {
-  "ignoreCommand": "npx turbo-ignore",
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/api"
-    }
-  ]
+  "ignoreCommand": "npx turbo-ignore"
 }
