@@ -25,8 +25,14 @@ COPY . .
 RUN turbo prune server --docker
 
 # Install dependencies stage
-FROM base AS installer
+FROM node:20-alpine AS installer
 WORKDIR /app
+
+# Install pnpm
+RUN corepack enable
+RUN corepack prepare pnpm@latest --activate
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
 
 # Copy pruned lockfile and package.json files
 COPY --from=prepare /app/out/json/ .
@@ -34,7 +40,7 @@ COPY --from=prepare /app/out/json/ .
 COPY --from=prepare /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 
 # Install dependencies
-RUN bun install --frozen-lockfile
+RUN pnpm install --frozen-lockfile
 
 # Production runtime stage
 FROM base AS runner
@@ -47,9 +53,8 @@ ENV PORT=3001
 RUN addgroup --system --gid 1001 hono && \
     adduser --system --uid 1001 hono
 
-# Copy dependencies from installer
-COPY --from=installer --chown=hono:hono /app/node_modules ./node_modules
-COPY --from=installer --chown=hono:hono /app/pnpm-lock.yaml ./pnpm-lock.yaml
+# Copy application from installer
+COPY --from=installer --chown=hono:hono /app .
 
 # Copy pruned source code
 COPY --from=prepare --chown=hono:hono /app/out/full/ .
@@ -60,7 +65,7 @@ EXPOSE 3001
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD ["wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health", "||", "exit", "1"]
+    CMD wget --no-verbose --tries=1 --spider http://localhost:3001/health || exit 1
 
 # Start the server
 WORKDIR /app/apps/server

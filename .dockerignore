@@ -1,0 +1,13 @@
+**/node_modules
+**/.git
+**/.gitignore
+**/.env*
+**/dist
+**/.next
+**/out
+**/coverage
+**/test
+**/spec
+**/.turbo
+**/.vercel
+**/.claude

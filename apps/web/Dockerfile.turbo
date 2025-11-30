@@ -35,9 +35,8 @@ RUN pnpm install --frozen-lockfile
 FROM base AS builder
 WORKDIR /app
 
-# Copy installed dependencies
-COPY --from=installer /app/node_modules ./node_modules
-COPY --from=installer /app/pnpm-lock.yaml ./pnpm-lock.yaml
+# Copy application from installer
+COPY --from=installer /app .
 
 # Copy pruned source code
 COPY --from=prepare /app/out/full/ .

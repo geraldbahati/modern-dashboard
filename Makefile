@@ -13,6 +13,9 @@ YELLOW := \033[1;33m
 RED := \033[0;31m
 NC := \033[0m # No Color
 
+# Enable BuildKit for all Docker commands
+export DOCKER_BUILDKIT := 1
+
 ##@ Help
 
 help: ## Display this help message
@@ -87,11 +90,17 @@ docker-build-server-binary: ## Build server with binary compilation
 	@echo "$(GREEN)Building server Docker image (binary)...$(NC)"
 	./scripts/docker-build-server.sh --binary
 
-docker-build-turbo: docker-build-web-turbo docker-build-server-turbo ## Build both services with Turbo prune
+docker-build-turbo: ## Build both services with Turbo prune (parallel)
+	@echo "$(GREEN)Building web and server Docker images in parallel...$(NC)"
+	@$(MAKE) -j 2 docker-build-web-turbo docker-build-server-turbo
 
 docker-up: ## Start all Docker services
 	@echo "$(GREEN)Starting Docker services...$(NC)"
 	docker compose up -d
+
+docker-prod: ## Start production Docker services
+	@echo "$(GREEN)Starting production Docker services...$(NC)"
+	docker compose -f docker-compose.prod.yml up -d --build
 
 docker-up-build: ## Build and start all Docker services
 	@echo "$(GREEN)Building and starting Docker services...$(NC)"
