@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/neon-http";
 import type { NeonHttpDatabase } from "drizzle-orm/neon-http";
-import * as schema from "./schema.js";
+import * as schema from "./schema";
 
 let _authDb: NeonHttpDatabase<typeof schema> | null = null;
 

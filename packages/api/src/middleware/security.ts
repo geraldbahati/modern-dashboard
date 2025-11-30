@@ -11,7 +11,7 @@ import {
   writeRateLimitConfig,
   heavyWriteRateLimitConfig,
 } from "@workspace/security/node";
-import { publicProcedure, protectedProcedure } from "./auth.js";
+import { publicProcedure, protectedProcedure } from "./auth";
 import type { IncomingMessage } from "node:http";
 
 // Get Arcjet key from environment

@@ -14,10 +14,10 @@ import {
   botConfig,
   authRateLimitConfig,
   apiRateLimitConfig,
-} from "./rules.js";
+} from "./rules";
 
 // Re-export rules for custom configurations
-export * from "./rules.js";
+export * from "./rules";
 
 /**
  * Create base Arcjet client for Next.js

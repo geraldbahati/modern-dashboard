@@ -4,6 +4,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build & Development Commands
 
+### Using Makefile (Recommended)
+
+```bash
+make help             # Show all available commands
+make setup            # Complete project setup (install + env)
+make dev              # Start all apps (Next.js :3000, Hono :3001)
+make build            # Build all packages via Turbo
+make lint             # Lint all packages
+make format           # Format all TS/TSX/MD files with Prettier
+make status           # Show project status
+```
+
+### Using pnpm directly
+
 ```bash
 pnpm install          # Install all dependencies
 pnpm dev              # Start all apps (Next.js :3000, Hono :3001)
@@ -14,6 +28,17 @@ pnpm format           # Format all TS/TSX/MD files with Prettier
 
 ### Database Commands
 
+#### Using Makefile
+```bash
+make auth-generate    # Generate auth schema from better-auth config
+make db-push          # Push all schemas to database
+make db-push-auth     # Push auth schema to database
+make db-push-app      # Push app schema to database
+make db-studio-auth   # Open Drizzle Studio for auth DB
+make db-studio-app    # Open Drizzle Studio for app DB
+```
+
+#### Using pnpm
 ```bash
 # Auth database (better-auth schema)
 pnpm auth:generate    # Generate auth schema from better-auth config
@@ -38,6 +63,39 @@ cd apps/server && bun run dev     # Start server on port 3001
 # Next.js web app
 cd apps/web && pnpm run dev       # Start on port 3000
 ```
+
+### Docker Commands
+
+#### Using Makefile (Recommended)
+```bash
+make docker-up-build         # Build and start all services
+make docker-up               # Start all services
+make docker-down             # Stop all services
+make docker-logs             # View all logs
+make docker-logs-web         # View web app logs
+make docker-logs-server      # View server logs
+make docker-restart          # Restart all services
+make docker-ps               # Show running containers
+make docker-clean            # Remove all containers and images
+```
+
+#### Using Scripts
+```bash
+./scripts/docker-build.sh              # Build web app Docker image
+./scripts/docker-build-server.sh       # Build Hono server Docker image
+./scripts/docker-build-server.sh --binary        # Server with binary compilation
+./scripts/docker-build-server.sh --standard      # Server standard build (default)
+```
+
+#### Using Docker Compose
+```bash
+docker compose up -d              # Start all services (web + server)
+docker compose down               # Stop all services
+docker compose logs -f web        # View web app logs
+docker compose logs -f server     # View server logs
+```
+
+See [DOCKER.md](./DOCKER.md) and [apps/server/DOCKER.md](./apps/server/DOCKER.md) for comprehensive guides.
 
 ## Architecture Overview
 

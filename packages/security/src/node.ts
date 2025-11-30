@@ -10,10 +10,10 @@ import {
   apiRateLimitConfig,
   defaultCharacteristics,
   getDefaultMode,
-} from "./rules.js";
+} from "./rules";
 
 // Re-export rules for custom configurations
-export * from "./rules.js";
+export * from "./rules";
 
 /**
  * Create base Arcjet client for Node.js/Hono

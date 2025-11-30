@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
     turbopackFileSystemCacheForDev: true,
   },
   serverExternalPackages: ["shiki"],
+  output: "standalone",
 };
 
 export default nextConfig;

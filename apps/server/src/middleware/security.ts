@@ -30,7 +30,10 @@ export const authSecurityMiddleware = createMiddleware<{
   const user = c.get("user");
   const userId = user?.id || "anonymous";
 
-  const decision = await authArcjet.protect(c.req.raw as unknown as IncomingMessage, { userId });
+  const decision = await authArcjet.protect(
+    c.req.raw as unknown as IncomingMessage,
+    { userId },
+  );
 
   if (decision.isDenied()) {
     return c.json(
@@ -63,7 +66,10 @@ export const apiSecurityMiddleware = createMiddleware<{
   const user = c.get("user");
   const userId = user?.id || "anonymous";
 
-  const decision = await apiArcjet.protect(c.req.raw as unknown as IncomingMessage, { userId });
+  const decision = await apiArcjet.protect(
+    c.req.raw as unknown as IncomingMessage,
+    { userId },
+  );
 
   if (decision.isDenied()) {
     return c.json(

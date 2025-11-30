@@ -1,0 +1,53 @@
+# Hono + Bun Standard Dockerfile (No Binary Compilation)
+# Uses pnpm for install, Bun for runtime
+
+FROM node:20-alpine AS deps
+WORKDIR /app
+
+# Install system dependencies and pnpm
+RUN apk add --no-cache libc6-compat
+RUN corepack enable
+RUN corepack prepare pnpm@latest --activate
+
+# Copy workspace configuration files
+COPY pnpm-workspace.yaml ./
+COPY package.json ./
+COPY pnpm-lock.yaml ./
+
+# Copy all workspace packages
+COPY packages ./packages
+COPY apps/server ./apps/server
+
+# Install all dependencies with pnpm (better workspace support)
+RUN pnpm install --frozen-lockfile
+
+# Runtime stage with Bun
+FROM oven/bun:1.1.44-alpine AS base
+
+# Runtime stage
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV PORT=3001
+
+# Create non-root user
+RUN addgroup --system --gid 1001 hono && \
+    adduser --system --uid 1001 hono
+
+# Copy everything from deps stage (includes node_modules, packages, and source)
+COPY --from=deps --chown=hono:hono /app ./
+
+# Switch to non-root user
+USER hono
+
+# Expose port
+EXPOSE 3001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD ["wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health", "||", "exit", "1"]
+
+# Start the server
+WORKDIR /app/apps/server
+CMD ["bun", "run", "--port", "3001", "src/index.ts"]

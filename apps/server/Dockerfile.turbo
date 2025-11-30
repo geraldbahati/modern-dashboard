@@ -1,0 +1,67 @@
+# Hono + Bun Optimized Dockerfile with Turborepo Prune
+# This uses turbo prune to create a minimal build context
+
+FROM oven/bun:1.1.44-alpine AS base
+RUN apk update
+RUN apk add --no-cache libc6-compat
+
+WORKDIR /app
+
+# Prune stage - create minimal monorepo subset
+FROM node:20-alpine AS prepare
+# Install pnpm and turbo
+RUN corepack enable
+RUN corepack prepare pnpm@latest --activate
+# Set up pnpm global bin directory
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN pnpm config set global-bin-dir /usr/local/bin
+RUN pnpm add -g turbo@^2
+
+WORKDIR /app
+COPY . .
+
+# Generate pruned monorepo for 'server' workspace
+RUN turbo prune server --docker
+
+# Install dependencies stage
+FROM base AS installer
+WORKDIR /app
+
+# Copy pruned lockfile and package.json files
+COPY --from=prepare /app/out/json/ .
+# Copy the pruned pnpm-lock.yaml
+COPY --from=prepare /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+
+# Install dependencies
+RUN bun install --frozen-lockfile
+
+# Production runtime stage
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV PORT=3001
+
+# Create non-root user
+RUN addgroup --system --gid 1001 hono && \
+    adduser --system --uid 1001 hono
+
+# Copy dependencies from installer
+COPY --from=installer --chown=hono:hono /app/node_modules ./node_modules
+COPY --from=installer --chown=hono:hono /app/pnpm-lock.yaml ./pnpm-lock.yaml
+
+# Copy pruned source code
+COPY --from=prepare --chown=hono:hono /app/out/full/ .
+
+USER hono
+
+EXPOSE 3001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD ["wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health", "||", "exit", "1"]
+
+# Start the server
+WORKDIR /app/apps/server
+CMD ["bun", "run", "--port", "3001", "src/index.ts"]

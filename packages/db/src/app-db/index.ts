@@ -6,7 +6,7 @@
 
 import { drizzle } from "drizzle-orm/neon-http";
 import type { NeonHttpDatabase } from "drizzle-orm/neon-http";
-import * as schema from "./schema.js";
+import * as schema from "./schema";
 
 let _appDb: NeonHttpDatabase<typeof schema> | null = null;
 
@@ -30,4 +30,4 @@ export const appDb = new Proxy({} as NeonHttpDatabase<typeof schema>, {
 });
 
 // Re-export schema for convenience
-export * as appSchema from "./schema.js";
+export * as appSchema from "./schema";

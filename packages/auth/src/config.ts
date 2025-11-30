@@ -10,18 +10,12 @@ import {
 } from "better-auth/plugins";
 import { passkey } from "better-auth/plugins/passkey";
 import {
-  sendWelcomeEmail,
-  sendVerificationEmail,
-  sendPasswordResetEmail,
-  sendOrganizationInvitation,
-} from "./email.js";
-import {
   ac,
   admin as adminRole,
   moderator,
   editor,
   user as userRole,
-} from "./permissions.js";
+} from "./permissions";
 
 // Define the input needed from the specific app
 export interface AuthConfigParams {
@@ -76,6 +70,7 @@ export const getBaseAuthConfig = (
       enabled: true,
       requireEmailVerification: true,
       sendResetPassword: async ({ user, url }) => {
+        const { sendPasswordResetEmail } = await import("./email");
         await sendPasswordResetEmail({ user, url });
       },
     },
@@ -83,9 +78,11 @@ export const getBaseAuthConfig = (
       autoSignInAfterVerification: true,
       sendOnSignUp: true,
       sendVerificationEmail: async ({ user, url }) => {
+        const { sendVerificationEmail } = await import("./email");
         await sendVerificationEmail({ user, url });
       },
       afterEmailVerification: async (user) => {
+        const { sendWelcomeEmail } = await import("./email");
         await sendWelcomeEmail({ user });
       },
     },
@@ -94,6 +91,7 @@ export const getBaseAuthConfig = (
       changeEmail: {
         enabled: true,
         sendChangeEmailVerification: async ({ user, newEmail, url }) => {
+          const { sendVerificationEmail } = await import("./email");
           await sendVerificationEmail({
             user: { ...user, email: newEmail },
             url,
@@ -114,6 +112,7 @@ export const getBaseAuthConfig = (
       multiSession({ maximumSessions: 10 }),
       organization({
         async sendInvitationEmail(data) {
+          const { sendOrganizationInvitation } = await import("./email");
           await sendOrganizationInvitation({
             ...data,
             expiresAt: data.invitation.expiresAt,

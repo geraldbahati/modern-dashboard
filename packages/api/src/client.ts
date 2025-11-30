@@ -6,7 +6,7 @@
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import type { RouterClient } from "@orpc/server";
-import type { AppRouter } from "./router.js";
+import type { AppRouter } from "./router";
 
 // Export the client type for use in other packages
 export type Client = RouterClient<AppRouter>;

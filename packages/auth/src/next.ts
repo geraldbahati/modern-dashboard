@@ -5,7 +5,7 @@
 
 import { betterAuth, type BetterAuthOptions } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
-import { getBaseAuthConfig, type AuthConfigParams } from "./config.js";
+import { getBaseAuthConfig, type AuthConfigParams } from "./config";
 
 /**
  * Create auth instance for Next.js
