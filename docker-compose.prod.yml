@@ -20,6 +20,7 @@ services:
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
       - AUTH_DATABASE_URL=${AUTH_DATABASE_URL}
       - NEXT_PUBLIC_AUTH_URL=${NEXT_PUBLIC_AUTH_URL}
+      - RESEND_API_KEY=${RESEND_API_KEY}
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1); })"]
       interval: 30s
