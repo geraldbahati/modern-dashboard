@@ -10,7 +10,9 @@ const baseURL = process.env.BETTER_AUTH_URL || "http://localhost:3001";
 const trustedOrigins = [
   "http://localhost:3000", // Next.js frontend
   "http://localhost:3001", // Hono server
-];
+  process.env.FRONTEND_URL, // Production frontend
+  process.env.BETTER_AUTH_URL, // Production server
+].filter((url) => url !== undefined) as string[];
 
 // Create auth instance using shared config
 export const auth = createAuth({
