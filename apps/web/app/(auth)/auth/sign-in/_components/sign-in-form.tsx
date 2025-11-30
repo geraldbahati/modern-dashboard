@@ -165,7 +165,10 @@ export function SignInForm() {
   };
 
   // OAuth provider sign-in handlers
-  const oauthHandlers: Record<SupportedOAuthProvider, () => Promise<void>> = {
+  const oauthHandlers: Record<
+    SupportedOAuthProvider,
+    (callbackUrl?: string) => Promise<void>
+  > = {
     google: signInWithGoogle,
     github: signInWithGitHub,
   };
@@ -173,7 +176,7 @@ export function SignInForm() {
   const handleOAuthSignIn = async (provider: SupportedOAuthProvider) => {
     try {
       setSocialLoading(provider);
-      await oauthHandlers[provider]();
+      await oauthHandlers[provider](callbackUrl);
     } catch (error) {
       console.error(`${provider} sign in error:`, error);
       setError("root", {

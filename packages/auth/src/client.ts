@@ -48,19 +48,19 @@ export type Session = typeof authClient.$Infer.Session;
 /**
  * Sign in with GitHub OAuth
  */
-export const signInWithGitHub = async () => {
+export const signInWithGitHub = async (callbackURL?: string) => {
   await authClient.signIn.social({
     provider: "github",
-    callbackURL: "/", // Redirect to home page after sign in
+    callbackURL: callbackURL || window.location.origin,
   });
 };
 
 /**
  * Sign in with Google OAuth
  */
-export const signInWithGoogle = async () => {
+export const signInWithGoogle = async (callbackURL?: string) => {
   await authClient.signIn.social({
     provider: "google",
-    callbackURL: "/", // Redirect to home page after sign in
+    callbackURL: callbackURL || window.location.origin,
   });
 };

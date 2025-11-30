@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -77,6 +77,8 @@ type SignUpFormData = z.infer<typeof signUpSchema>;
 
 export function SignUpForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/";
   const [socialLoading, setSocialLoading] =
     useState<SupportedOAuthProvider | null>(null);
   const [showPasskeyPrompt, setShowPasskeyPrompt] = useState(false);
@@ -161,7 +163,10 @@ export function SignUpForm() {
   };
 
   // OAuth provider sign-up handlers
-  const oauthHandlers: Record<SupportedOAuthProvider, () => Promise<void>> = {
+  const oauthHandlers: Record<
+    SupportedOAuthProvider,
+    (callbackUrl?: string) => Promise<void>
+  > = {
     google: signInWithGoogle,
     github: signInWithGitHub,
   };
@@ -169,7 +174,7 @@ export function SignUpForm() {
   const handleOAuthSignUp = async (provider: SupportedOAuthProvider) => {
     try {
       setSocialLoading(provider);
-      await oauthHandlers[provider]();
+      await oauthHandlers[provider](callbackUrl);
     } catch (error) {
       console.error(`${provider} sign up error:`, error);
       setError("root", {
