@@ -1,0 +1,22 @@
+# Development Environment Variables (Secrets)
+# Copy this file to .dev.vars and fill in your actual values
+# .dev.vars is gitignored and should never be committed
+
+# Database URLs (Neon PostgreSQL with HTTP driver)
+AUTH_DATABASE_URL=postgresql://user:password@host.neon.tech/auth_db?sslmode=require
+DATABASE_URL=postgresql://user:password@host.neon.tech/app_db?sslmode=require
+
+# Better Auth Configuration
+BETTER_AUTH_SECRET=your-super-secret-random-string-min-32-chars
+
+# Email Service (Resend)
+RESEND_API_KEY=re_your_resend_api_key_here
+
+# OAuth Providers (Optional)
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GITHUB_CLIENT_ID=your-github-client-id
+GITHUB_CLIENT_SECRET=your-github-client-secret
+
+# Note: Non-secret environment variables (URLs, ports, etc.) should be
+# configured in wrangler.jsonc under the "vars" section, not here.

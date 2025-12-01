@@ -2,12 +2,16 @@
 
 This is a Cloudflare Workers version of the Hono API server, designed to run on Cloudflare's edge network.
 
-## Setup
+## 🚀 Quick Start
 
 ### 1. Install Dependencies
 
 ```bash
+# From the monorepo root
 pnpm install
+
+# Or from this directory
+cd apps/server-cloudflare && pnpm install
 ```
 
 ### 2. Configure Environment Variables
@@ -21,39 +25,134 @@ cp .dev.vars.example .dev.vars
 Edit `.dev.vars` with your actual values:
 
 ```env
-AUTH_DATABASE_URL=postgresql://...
-DATABASE_URL=postgresql://...
-BETTER_AUTH_SECRET=your-secret-here
-RESEND_API_KEY=your-api-key
+# Database URLs (Neon PostgreSQL)
+AUTH_DATABASE_URL=postgresql://user:password@host.neon.tech/auth_db?sslmode=require
+DATABASE_URL=postgresql://user:password@host.neon.tech/app_db?sslmode=require
+
+# Better Auth (min 32 characters)
+BETTER_AUTH_SECRET=your-super-secret-random-string-here
+
+# Email Service
+RESEND_API_KEY=re_your_resend_api_key_here
+
+# OAuth (Optional)
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GITHUB_CLIENT_ID=your-github-client-id
+GITHUB_CLIENT_SECRET=your-github-client-secret
 ```
 
-**Important**: `.dev.vars` is for **secrets only**. Non-secret environment variables should be in `wrangler.jsonc` under the `vars` section.
+**Important**: `.dev.vars` is for **secrets only**. Non-secret environment variables (URLs, NODE_ENV, etc.) should be configured in `wrangler.jsonc` under the `vars` section.
 
-### 3. Local Development
+### 3. Update Non-Secret Variables
+
+Edit `wrangler.jsonc` for development:
+
+```jsonc
+{
+  "vars": {
+    "NODE_ENV": "development",
+    "BETTER_AUTH_URL": "http://localhost:8787",  // Local Wrangler dev server
+    "FRONTEND_URL": "http://localhost:3000"      // Next.js dev server
+  }
+}
+```
+
+### 4. Start Local Development
 
 ```bash
 pnpm dev
 ```
 
-This starts Wrangler's local development server at `http://localhost:8787`.
+This starts Wrangler's local development server at **http://localhost:8787** using the Cloudflare Workers runtime (`workerd`).
 
-## Deployment
+## 📦 Deployment to Cloudflare Workers
 
-### Deploy to Cloudflare Workers
+### Prerequisites
+
+- Cloudflare account (free tier works for testing)
+- Wrangler CLI (already installed as devDependency)
+- Production database URLs (Neon PostgreSQL)
+
+### Step 1: Login to Cloudflare
 
 ```bash
-pnpm run deploy
+pnpm wrangler login
 ```
 
-### Configure Production Secrets
+This will open a browser window to authenticate with Cloudflare.
 
-Set secrets using Wrangler CLI (not in wrangler.jsonc):
+### Step 2: Update Production Configuration
+
+Edit `wrangler.jsonc` and update the `vars` section for production:
+
+```jsonc
+{
+  "name": "modern-dashboard-server",  // This will be your Worker name
+  "vars": {
+    "NODE_ENV": "production",
+    "BETTER_AUTH_URL": "https://modern-dashboard-server.your-subdomain.workers.dev",
+    "FRONTEND_URL": "https://modern-dashboard-web.your-subdomain.workers.dev"
+  }
+}
+```
+
+### Step 3: Set Production Secrets
+
+**IMPORTANT**: Never put secrets in `wrangler.jsonc` or commit them to git. Use Wrangler's secret management:
 
 ```bash
-wrangler secret put AUTH_DATABASE_URL
-wrangler secret put DATABASE_URL
-wrangler secret put BETTER_AUTH_SECRET
-wrangler secret put RESEND_API_KEY
+# Navigate to this directory
+cd apps/server-cloudflare
+
+# Set each secret (you'll be prompted to enter the value)
+pnpm wrangler secret put AUTH_DATABASE_URL
+pnpm wrangler secret put DATABASE_URL
+pnpm wrangler secret put BETTER_AUTH_SECRET
+pnpm wrangler secret put RESEND_API_KEY
+
+# Optional OAuth secrets
+pnpm wrangler secret put GOOGLE_CLIENT_ID
+pnpm wrangler secret put GOOGLE_CLIENT_SECRET
+pnpm wrangler secret put GITHUB_CLIENT_ID
+pnpm wrangler secret put GITHUB_CLIENT_SECRET
+```
+
+### Step 4: Deploy
+
+```bash
+pnpm deploy
+```
+
+Your API will be live at:
+- **Production URL**: `https://modern-dashboard-server.<your-subdomain>.workers.dev`
+- Example endpoints:
+  - Health: `https://modern-dashboard-server.<your-subdomain>.workers.dev/health`
+  - Auth: `https://modern-dashboard-server.<your-subdomain>.workers.dev/api/auth/*`
+  - RPC: `https://modern-dashboard-server.<your-subdomain>.workers.dev/api/rpc/*`
+
+### Step 5: Configure Custom Domain (Optional)
+
+1. Go to [Cloudflare Dashboard](https://dash.cloudflare.com/)
+2. Select your Worker: `modern-dashboard-server`
+3. Navigate to **Settings** → **Triggers** → **Custom Domains**
+4. Add your custom domain (e.g., `api.yourdomain.com`)
+
+Update `wrangler.jsonc` to reflect the custom domain:
+
+```jsonc
+{
+  "vars": {
+    "BETTER_AUTH_URL": "https://api.yourdomain.com",
+    "FRONTEND_URL": "https://yourdomain.com"
+  }
+}
+```
+
+Then redeploy:
+
+```bash
+pnpm deploy
 ```
 
 ## Type Generation

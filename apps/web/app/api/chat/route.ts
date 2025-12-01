@@ -45,7 +45,10 @@ export async function POST(req: Request) {
 
     // Create server-side oRPC client with cookies for auth
     const cookieStore = await cookies();
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+    const API_URL =
+      process.env.API_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      "http://localhost:3001";
     const RPC_URL = `${API_URL}/api/rpc`;
 
     const client = createClient({

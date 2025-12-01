@@ -1,12 +1,18 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "server-cloudflare",
+  "name": "modern-dashboard-server",
   "main": "src/index.ts",
   "compatibility_date": "2025-12-01",
   "compatibility_flags": ["nodejs_compat"],
+
+  // Non-secret environment variables
+  // These are embedded in the Worker at build time
+  // For local development, use localhost URLs
+  // For production, update to your Workers URLs before deploying
   "vars": {
-    "BETTER_AUTH_URL": "http://localhost:3001",
-    "FRONTEND_URL": "http://localhost:3000"
+    "NODE_ENV": "development",
+    "BETTER_AUTH_URL": "http://localhost:8787",
+    "FRONTEND_URL": "http://localhost:3000",
   },
   // Rate limiting configuration
   // Note: Cloudflare Rate Limiting API requires a paid Workers plan

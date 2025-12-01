@@ -4,8 +4,21 @@
   "main": ".open-next/worker.js",
   "compatibility_date": "2025-12-01",
   "compatibility_flags": ["nodejs_compat"],
+
+  // Assets configuration
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
+  },
+
+  // Environment variables for production deployment
+  // For local preview with 'pnpm preview', update these to localhost:8787
+  // For production deployment, update to your actual Workers URLs
+  "vars": {
+    "NEXT_PUBLIC_API_URL": "https://server-cloudflare.geraldbahati.workers.dev",
+    "NEXT_PUBLIC_AUTH_URL": "https://server-cloudflare.geraldbahati.workers.dev/api/auth"
   }
+
+  // Note: Secrets (BETTER_AUTH_SECRET, AUTH_DATABASE_URL, etc.) should be
+  // set via 'wrangler secret put' command, not here
 }
