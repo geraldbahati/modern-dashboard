@@ -257,7 +257,7 @@ export const batchCreate = writeSecurityProcedure
     })
   )
   .handler(async ({ input, context }) => {
-    const created: typeof quickTaskSchema._type[] = [];
+    const created: z.infer<typeof quickTaskSchema>[] = [];
     const failed: { index: number; error: string }[] = [];
 
     for (let i = 0; i < input.tasks.length; i++) {
@@ -280,7 +280,10 @@ export const batchCreate = writeSecurityProcedure
       } catch (error) {
         failed.push({
           index: i,
-          error: error instanceof Error ? error.message : "Failed to create quick task",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to create quick task",
         });
       }
     }
@@ -324,7 +327,7 @@ export const batchUpdate = writeSecurityProcedure
     })
   )
   .handler(async ({ input, context }) => {
-    const updated: typeof quickTaskSchema._type[] = [];
+    const updated: z.infer<typeof quickTaskSchema>[] = [];
     const failed: { quickTaskId: string; error: string }[] = [];
 
     for (const update of input.updates) {
@@ -358,7 +361,10 @@ export const batchUpdate = writeSecurityProcedure
       } catch (error) {
         failed.push({
           quickTaskId: update.quickTaskId,
-          error: error instanceof Error ? error.message : "Failed to update quick task",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to update quick task",
         });
       }
     }
@@ -416,7 +422,10 @@ export const batchDelete = writeSecurityProcedure
       } catch (error) {
         failed.push({
           quickTaskId,
-          error: error instanceof Error ? error.message : "Failed to delete quick task",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to delete quick task",
         });
       }
     }

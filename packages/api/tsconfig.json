@@ -3,7 +3,12 @@
   "compilerOptions": {
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "noEmit": true
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@workspace/ai": ["../ai/src/index.ts"],
+      "@workspace/ai/*": ["../ai/src/*"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules"]

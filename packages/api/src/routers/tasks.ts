@@ -73,7 +73,16 @@ export const list = readSecurityProcedure
     })
   )
   .handler(async ({ input, context }) => {
-    const { limit, offset, projectId, assigneeId, status, priority, search, overdue } = input;
+    const {
+      limit,
+      offset,
+      projectId,
+      assigneeId,
+      status,
+      priority,
+      search,
+      overdue,
+    } = input;
 
     // Build where conditions
     const conditions = [];
@@ -90,7 +99,7 @@ export const list = readSecurityProcedure
         .from(projects)
         .where(eq(projects.ownerId, context.user.id));
 
-      const projectIds = userProjects.map(p => p.id);
+      const projectIds = userProjects.map((p) => p.id);
       if (projectIds.length > 0) {
         conditions.push(sql`${tasks.projectId} IN ${projectIds}`);
       } else {
@@ -127,10 +136,7 @@ export const list = readSecurityProcedure
     // Filter overdue tasks
     if (overdue) {
       conditions.push(
-        and(
-          sql`${tasks.dueDate} < NOW()`,
-          sql`${tasks.status} != 'done'`
-        )
+        and(sql`${tasks.dueDate} < NOW()`, sql`${tasks.status} != 'done'`)
       );
     }
 
@@ -277,10 +283,7 @@ export const update = writeSecurityProcedure
     const { id, ...updates } = input;
 
     // Get existing task
-    const [existing] = await appDb
-      .select()
-      .from(tasks)
-      .where(eq(tasks.id, id));
+    const [existing] = await appDb.select().from(tasks).where(eq(tasks.id, id));
 
     if (!existing) {
       throw new ORPCError("NOT_FOUND", {
@@ -507,7 +510,7 @@ export const batchCreate = writeSecurityProcedure
     })
   )
   .handler(async ({ input, context }) => {
-    const created: typeof taskSchema._type[] = [];
+    const created: z.infer<typeof taskSchema>[] = [];
     const failed: { index: number; error: string }[] = [];
 
     for (let i = 0; i < input.tasks.length; i++) {
@@ -528,7 +531,10 @@ export const batchCreate = writeSecurityProcedure
           dueDate: task.dueDate ? new Date(task.dueDate) : null,
         };
 
-        const [newTask] = await appDb.insert(tasks).values(insertData).returning();
+        const [newTask] = await appDb
+          .insert(tasks)
+          .values(insertData)
+          .returning();
 
         if (newTask) {
           created.push(toTask(newTask));
@@ -536,7 +542,8 @@ export const batchCreate = writeSecurityProcedure
       } catch (error) {
         failed.push({
           index: i,
-          error: error instanceof Error ? error.message : "Failed to create task",
+          error:
+            error instanceof Error ? error.message : "Failed to create task",
         });
       }
     }
@@ -584,7 +591,7 @@ export const batchUpdate = writeSecurityProcedure
     })
   )
   .handler(async ({ input, context }) => {
-    const updated: typeof taskSchema._type[] = [];
+    const updated: z.infer<typeof taskSchema>[] = [];
     const failed: { taskId: string; error: string }[] = [];
 
     for (const update of input.updates) {
@@ -592,7 +599,10 @@ export const batchUpdate = writeSecurityProcedure
         const { taskId, ...updates } = update;
 
         // Get existing task
-        const [existing] = await appDb.select().from(tasks).where(eq(tasks.id, taskId));
+        const [existing] = await appDb
+          .select()
+          .from(tasks)
+          .where(eq(tasks.id, taskId));
 
         if (!existing) {
           throw new Error("Task not found");
@@ -627,7 +637,8 @@ export const batchUpdate = writeSecurityProcedure
       } catch (error) {
         failed.push({
           taskId: update.taskId,
-          error: error instanceof Error ? error.message : "Failed to update task",
+          error:
+            error instanceof Error ? error.message : "Failed to update task",
         });
       }
     }
@@ -667,7 +678,10 @@ export const batchDelete = writeSecurityProcedure
 
     for (const taskId of input.taskIds) {
       try {
-        const [existing] = await appDb.select().from(tasks).where(eq(tasks.id, taskId));
+        const [existing] = await appDb
+          .select()
+          .from(tasks)
+          .where(eq(tasks.id, taskId));
 
         if (!existing) {
           throw new Error("Task not found");
@@ -680,7 +694,8 @@ export const batchDelete = writeSecurityProcedure
       } catch (error) {
         failed.push({
           taskId,
-          error: error instanceof Error ? error.message : "Failed to delete task",
+          error:
+            error instanceof Error ? error.message : "Failed to delete task",
         });
       }
     }

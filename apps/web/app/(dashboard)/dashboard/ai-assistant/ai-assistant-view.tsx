@@ -49,6 +49,8 @@ import { useChat } from "@ai-sdk/react";
 import type { UIMessage } from "ai";
 import { getToolComponent } from "./registry";
 import { useUserContext } from "./_hooks/use-user-context";
+import { eventIteratorToStream } from "@orpc/server";
+import { createBrowserClient } from "@workspace/api/client";
 import "./tools/user-tools"; // Register tools
 import "./tools/organization-tools"; // Register organization tools
 import "./tools/project-tools"; // Register project tools
@@ -90,10 +92,34 @@ export function AiAssistantView() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [currentConversationId, setCurrentConversationId] = useState<string>();
 
-  // Use AI SDK UI hook
+  // Use AI SDK UI hook with oRPC transport
   const { messages, sendMessage, status } = useChat<UIMessage>({
     id: "ai-assistant-chat",
     messages: [] as UIMessage[],
+    transport: {
+      async sendMessages(options) {
+        // Create oRPC client
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+        const RPC_URL = `${API_URL}/api/rpc`;
+        const client = createBrowserClient(RPC_URL);
+
+        // Call oRPC AI chat endpoint
+        return eventIteratorToStream(
+          await (client.ai.chat as any)(
+            {
+              messages: options.messages,
+              model: selectedModel,
+            },
+            {
+              signal: options.abortSignal,
+            }
+          )
+        );
+      },
+      reconnectToStream() {
+        throw new Error("Unsupported");
+      },
+    },
   });
 
   useEffect(() => {
@@ -124,21 +150,16 @@ export function AiAssistantView() {
 
       setText("");
 
-      // Send message using AI SDK UI v5
-      await sendMessage(
-        {
-          role: "user",
-          parts: [
-            {
-              type: "text",
-              text: message.text,
-            },
-          ],
-        },
-        {
-          body: { model: selectedModel },
-        }
-      );
+      // Send message using AI SDK UI v5 with oRPC
+      await sendMessage({
+        role: "user",
+        parts: [
+          {
+            type: "text",
+            text: message.text,
+          },
+        ],
+      });
 
       // Save to conversation history
       try {
@@ -158,7 +179,7 @@ export function AiAssistantView() {
         console.error("Failed to save message", error);
       }
     },
-    [currentConversationId, sendMessage, selectedModel]
+    [currentConversationId, sendMessage]
   );
 
   const onLoad = useCallback(
@@ -462,17 +483,10 @@ export function AiAssistantView() {
                                     }
 
                                     if (prompt) {
-                                      sendMessage(
-                                        {
-                                          role: "user",
-                                          parts: [
-                                            { type: "text", text: prompt },
-                                          ],
-                                        },
-                                        {
-                                          body: { model: selectedModel },
-                                        }
-                                      );
+                                      sendMessage({
+                                        role: "user",
+                                        parts: [{ type: "text", text: prompt }],
+                                      });
                                     }
                                   }}
                                 />

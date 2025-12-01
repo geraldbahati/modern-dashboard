@@ -13,6 +13,7 @@ import { organizationsRouter } from "./routers/organizations";
 import { tasksRouter } from "./routers/tasks";
 import { analyticsRouter } from "./routers/analytics";
 import { adminsRouter } from "./routers/admins";
+import { aiRouter } from "./routers/ai";
 
 // Combined router - this is the source of truth for all API routes
 export const router = {
@@ -26,6 +27,7 @@ export const router = {
   tasks: tasksRouter,
   analytics: analyticsRouter,
   admins: adminsRouter,
+  ai: aiRouter,
 };
 
 // Export router type for client inference

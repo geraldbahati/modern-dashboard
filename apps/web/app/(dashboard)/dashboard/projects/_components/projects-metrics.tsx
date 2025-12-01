@@ -7,7 +7,7 @@ import { MetricsSkeleton } from "../../_components/metrics-skeleton";
 
 export function ProjectsMetrics() {
   const { data: metrics, isLoading } = useQuery(
-    orpc.projects.metrics.queryOptions()
+    orpc.projects.metrics.queryOptions({})
   );
 
   if (isLoading) {
