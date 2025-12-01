@@ -17,6 +17,8 @@ services:
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
       - AUTH_DATABASE_URL=${AUTH_DATABASE_URL}
       - NEXT_PUBLIC_AUTH_URL=${NEXT_PUBLIC_AUTH_URL:-http://localhost:3001/api/auth}
+      - API_URL=http://server:3001
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3001}
     depends_on:
       - server
     restart: unless-stopped

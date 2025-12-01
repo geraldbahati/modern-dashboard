@@ -25,7 +25,8 @@ export type DisplayUser = User & {
 
 // Create API client with auth cookies
 const getApiClient = async () => {
-  const baseUrl = "http://localhost:3001";
+  // Use API_URL from environment, fallback to localhost for dev
+  const baseUrl = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   const cookieStore = await cookies();
 
   return createClient({
