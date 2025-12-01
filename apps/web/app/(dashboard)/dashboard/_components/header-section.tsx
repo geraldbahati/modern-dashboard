@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import { useWeather } from "../../../../hooks/use-weather";
 import { Skeleton } from "@workspace/ui/components/skeleton";
 import { DashboardCard } from "@workspace/ui/components/dashboard-card";
+import { useDashboardSession } from "./dashboard-session-provider";
 
 export function HeaderSectionSkeleton() {
   return (
@@ -45,13 +46,10 @@ export function HeaderSectionSkeleton() {
   );
 }
 
-interface HeaderSectionProps {
-  userName?: string;
-}
-
-export default function HeaderSection({ userName }: HeaderSectionProps) {
+export default function HeaderSection() {
   const [mounted, setMounted] = useState(false);
   const [date, setDate] = useState(new Date());
+  const { userName } = useDashboardSession();
   const { weather, loading, error } = useWeather();
 
   // Get first name from full name

@@ -4,6 +4,7 @@ import {
 } from "@workspace/ui/components/sidebar";
 import { TopBar } from "./_components/topbar";
 import { AppSidebar } from "./_components/app-sidebar";
+import { DashboardSessionProvider } from "./_components/dashboard-session-provider";
 
 export default function DashboardLayout({
   children,
@@ -11,16 +12,18 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <SidebarProvider>
-      <div className="flex flex-col min-h-screen w-full">
-        <TopBar />
-        <div className="flex flex-1 pt-[5.25rem]">
-          <AppSidebar />
-          <SidebarInset>
-            <div className="flex-1 p-4">{children}</div>
-          </SidebarInset>
+    <DashboardSessionProvider>
+      <SidebarProvider>
+        <div className="flex flex-col min-h-screen w-full">
+          <TopBar />
+          <div className="flex flex-1 pt-[5.25rem]">
+            <AppSidebar />
+            <SidebarInset>
+              <div className="flex-1 p-4">{children}</div>
+            </SidebarInset>
+          </div>
         </div>
-      </div>
-    </SidebarProvider>
+      </SidebarProvider>
+    </DashboardSessionProvider>
   );
 }

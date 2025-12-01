@@ -1,3 +1,5 @@
+"use client";
+
 import { Suspense } from "react";
 import HeaderSection, {
   HeaderSectionSkeleton,
@@ -25,70 +27,69 @@ import PerformanceAnalytics, {
   PerformanceAnalyticsSkeleton,
 } from "./_components/performance-analytics";
 import { DashboardHeader } from "./_components/dashboard-header";
-import { DashboardClientWrapper } from "./_components/dashboard-client-wrapper";
+import { useDashboardSession } from "./_components/dashboard-session-provider";
 
 export default function DashboardPage() {
+  const { canViewAnalytics, canViewProjects, canViewTasks } =
+    useDashboardSession();
+
   return (
-    <DashboardClientWrapper>
-      {({ userName, canViewAnalytics, canViewProjects, canViewTasks }) => (
-        <div className="flex flex-col gap-6">
-          <DashboardHeader
-            title="Overview"
-            description="Monitor key metrics and manage your platform"
-          />
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column (Main Content) */}
-            <div className="lg:col-span-2 flex flex-col gap-6">
-              <Suspense fallback={<HeaderSectionSkeleton />}>
-                <HeaderSection userName={userName} />
+    <div className="flex flex-col gap-6">
+      <DashboardHeader
+        title="Overview"
+        description="Monitor key metrics and manage your platform"
+      />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column (Main Content) */}
+        <div className="lg:col-span-2 flex flex-col gap-6">
+          <Suspense fallback={<HeaderSectionSkeleton />}>
+            <HeaderSection />
+          </Suspense>
+
+          {canViewAnalytics && <MetricsCards />}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {canViewTasks && (
+              <Suspense fallback={<QuickTasksSkeleton />}>
+                <QuickTasks />
               </Suspense>
-
-              {canViewAnalytics && <MetricsCards />}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {canViewTasks && (
-                  <Suspense fallback={<QuickTasksSkeleton />}>
-                    <QuickTasks />
-                  </Suspense>
-                )}
-                <Suspense fallback={<CalendarWidgetSkeleton />}>
-                  <CalendarWidget />
-                </Suspense>
-              </div>
-
-              {canViewProjects && (
-                <Suspense fallback={<RecentProjectsSkeleton />}>
-                  <RecentProjects />
-                </Suspense>
-              )}
-
-              {canViewAnalytics && (
-                <Suspense fallback={<ActivityMapSkeleton />}>
-                  <ActivityMap />
-                </Suspense>
-              )}
-            </div>
-
-            {/* Right Column (Analytics Sidebar) */}
-            {canViewAnalytics && (
-              <div className="lg:col-span-1 flex flex-col gap-6">
-                <Suspense fallback={<InsightAnalyticsSkeleton />}>
-                  <InsightAnalytics />
-                </Suspense>
-                <Suspense fallback={<RevenueAnalyticsSkeleton />}>
-                  <RevenueAnalytics />
-                </Suspense>
-                <Suspense fallback={<PerformanceMetricsSkeleton />}>
-                  <PerformanceMetrics />
-                </Suspense>
-                <Suspense fallback={<PerformanceAnalyticsSkeleton />}>
-                  <PerformanceAnalytics />
-                </Suspense>
-              </div>
             )}
+            <Suspense fallback={<CalendarWidgetSkeleton />}>
+              <CalendarWidget />
+            </Suspense>
           </div>
+
+          {canViewProjects && (
+            <Suspense fallback={<RecentProjectsSkeleton />}>
+              <RecentProjects />
+            </Suspense>
+          )}
+
+          {canViewAnalytics && (
+            <Suspense fallback={<ActivityMapSkeleton />}>
+              <ActivityMap />
+            </Suspense>
+          )}
         </div>
-      )}
-    </DashboardClientWrapper>
+
+        {/* Right Column (Analytics Sidebar) */}
+        {canViewAnalytics && (
+          <div className="lg:col-span-1 flex flex-col gap-6">
+            <Suspense fallback={<InsightAnalyticsSkeleton />}>
+              <InsightAnalytics />
+            </Suspense>
+            <Suspense fallback={<RevenueAnalyticsSkeleton />}>
+              <RevenueAnalytics />
+            </Suspense>
+            <Suspense fallback={<PerformanceMetricsSkeleton />}>
+              <PerformanceMetrics />
+            </Suspense>
+            <Suspense fallback={<PerformanceAnalyticsSkeleton />}>
+              <PerformanceAnalytics />
+            </Suspense>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
