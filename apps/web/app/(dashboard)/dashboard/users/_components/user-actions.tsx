@@ -34,46 +34,17 @@ interface UserActionsProps {
 
 export function UserActions({ user }: UserActionsProps) {
   const queryClient = useQueryClient();
-  const queryKey = orpc.users.list.queryKey();
 
   const deleteMutation = useMutation({
     ...orpc.users.delete.mutationOptions(),
-    onMutate: async () => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey });
-
-      // Snapshot the previous value
-      const previousUsers = queryClient.getQueryData(queryKey);
-
-      // Optimistically update to remove the user
-      queryClient.setQueryData(queryKey, (old: any) => {
-        if (!old?.users) return old;
-        return {
-          ...old,
-          users: old.users.filter((u: User) => u.id !== user.id),
-          pagination: {
-            ...old.pagination,
-            totalItems: old.pagination.totalItems - 1,
-          },
-        };
-      });
-
-      return { previousUsers };
-    },
-    onError: (_err, _variables, context) => {
-      // Rollback on error
-      if (context?.previousUsers) {
-        queryClient.setQueryData(queryKey, context.previousUsers);
-      }
-      toast.error("Failed to delete user");
-    },
     onSuccess: () => {
       toast.success("User deleted successfully");
+      // Invalidate both users list and metrics queries
+      queryClient.invalidateQueries({ queryKey: ["orpc", "users", "list"] });
+      queryClient.invalidateQueries({ queryKey: ["orpc", "users", "metrics"] });
     },
-    onSettled: () => {
-      // Refetch to ensure we have the latest data
-      queryClient.invalidateQueries({ queryKey });
-      queryClient.invalidateQueries({ queryKey: orpc.users.metrics.queryKey() });
+    onError: () => {
+      toast.error("Failed to delete user");
     },
   });
 

@@ -40,15 +40,17 @@ export function UsersTable({ searchParams }: UsersTableProps) {
     error,
   } = useQuery(
     orpc.users.list.queryOptions({
-      page,
-      limit: 10,
-      offset: (page - 1) * 10,
-      username: searchParams.username,
-      email: searchParams.email,
-      firstName: searchParams.firstName,
-      lastName: searchParams.lastName,
-      fromDate: searchParams.fromDate,
-      toDate: searchParams.toDate,
+      input: {
+        page,
+        limit: 10,
+        offset: (page - 1) * 10,
+        username: searchParams.username,
+        email: searchParams.email,
+        firstName: searchParams.firstName,
+        lastName: searchParams.lastName,
+        fromDate: searchParams.fromDate,
+        toDate: searchParams.toDate,
+      },
     })
   );
 
