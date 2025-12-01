@@ -1,8 +1,22 @@
-import { getProjectMetrics } from "../_lib/actions";
-import { ProjectsMetricsList } from "./projects-metrics-list";
+"use client";
 
-export async function ProjectsMetrics() {
-  const metrics = await getProjectMetrics();
+import { useQuery } from "@tanstack/react-query";
+import { orpc } from "@/lib/orpc";
+import { ProjectsMetricsList } from "./projects-metrics-list";
+import { MetricsSkeleton } from "../../_components/metrics-skeleton";
+
+export function ProjectsMetrics() {
+  const { data: metrics, isLoading } = useQuery(
+    orpc.projects.metrics.queryOptions()
+  );
+
+  if (isLoading) {
+    return <MetricsSkeleton />;
+  }
+
+  if (!metrics) {
+    return null;
+  }
 
   return <ProjectsMetricsList metrics={metrics} />;
 }

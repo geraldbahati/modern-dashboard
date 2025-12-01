@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Table,
   TableBody,
@@ -10,9 +12,11 @@ import { Badge } from "@workspace/ui/components/badge";
 import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar";
 import { Button } from "@workspace/ui/components/button";
 import { Eye } from "lucide-react";
-import { getAdmins } from "../_lib/actions";
+import { Pagination } from "../../users/_components/pagination";
 import { AdminActions } from "./admin-actions";
-import { Pagination } from "../../users/_components/pagination"; // Reusing pagination
+import { useQuery } from "@tanstack/react-query";
+import { orpc } from "@/lib/orpc";
+import { TableSkeleton } from "../../_components/table-skeleton";
 
 interface AdminsTableProps {
   searchParams: {
@@ -23,15 +27,42 @@ interface AdminsTableProps {
   };
 }
 
-export async function AdminsTable({ searchParams }: AdminsTableProps) {
+export function AdminsTable({ searchParams }: AdminsTableProps) {
   const page = searchParams.page ? parseInt(searchParams.page) : 1;
 
-  const { users, pagination } = await getAdmins({
-    page,
-    search: searchParams.search,
-    email: searchParams.email,
-    name: searchParams.name,
-  });
+  const { data, isLoading, error } = useQuery(
+    orpc.users.list.queryOptions({
+      input: {
+        page,
+        limit: 10,
+        search: searchParams.search,
+        email: searchParams.email,
+        username: searchParams.name, // Mapping name to username filter as per API
+      },
+    })
+  );
+
+  if (isLoading) {
+    return <TableSkeleton />;
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-xl border bg-card p-8 text-center text-muted-foreground">
+        Failed to load admins. Please try again.
+      </div>
+    );
+  }
+
+  const users = data?.users || [];
+  const pagination = data?.pagination || {
+    currentPage: page,
+    totalPages: 0,
+    totalItems: 0,
+    itemsPerPage: 10,
+    startIndex: 0,
+    endIndex: 0,
+  };
 
   return (
     <>
@@ -91,7 +122,13 @@ export async function AdminsTable({ searchParams }: AdminsTableProps) {
                       {/* Mock phone */}
                       +1555000000
                     </TableCell>
-                    <TableCell>{user.createdDate}</TableCell>
+                    <TableCell>
+                      {new Date(user.createdAt).toLocaleDateString("en-GB", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                      })}
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Button variant="ghost" size="sm" className="h-8 gap-1">

@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { Metadata } from "next";
 import { Button } from "@workspace/ui/components/button";
 import { ProjectsMetrics } from "./_components/projects-metrics";
@@ -6,8 +5,6 @@ import { ProjectsTable } from "./_components/projects-table";
 import { ProjectsFilters } from "./_components/projects-filters";
 import { Plus } from "lucide-react";
 import { DashboardHeader } from "../_components/dashboard-header";
-import { MetricsSkeleton } from "../_components/metrics-skeleton";
-import { TableSkeleton } from "../_components/table-skeleton";
 
 export const metadata: Metadata = {
   title: "Projects | Dashboard",
@@ -40,15 +37,11 @@ export default async function ProjectsPage({
         </Button>
       </DashboardHeader>
 
-      <Suspense fallback={<MetricsSkeleton />}>
-        <ProjectsMetrics />
-      </Suspense>
+      <ProjectsMetrics />
 
       <ProjectsFilters />
 
-      <Suspense key={JSON.stringify(params)} fallback={<TableSkeleton />}>
-        <ProjectsTable searchParams={params} />
-      </Suspense>
+      <ProjectsTable searchParams={params} />
     </div>
   );
 }

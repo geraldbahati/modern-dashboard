@@ -1,12 +1,9 @@
-import { Suspense } from "react";
 import { Metadata } from "next";
 import { DashboardHeader } from "../_components/dashboard-header";
 import { Button } from "@workspace/ui/components/button";
 import { AdminsMetrics } from "./_components/admins-metrics";
 import { AdminsTable } from "./_components/admins-table";
 import { AdminsFilters } from "./_components/admins-filters";
-import { MetricsSkeleton } from "../_components/metrics-skeleton";
-import { TableSkeleton } from "../_components/table-skeleton";
 import { UserPlus } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -38,15 +35,11 @@ export default async function AdminsPage({ searchParams }: AdminsPageProps) {
         </Button>
       </DashboardHeader>
 
-      <Suspense fallback={<MetricsSkeleton />}>
-        <AdminsMetrics />
-      </Suspense>
+      <AdminsMetrics />
 
       <AdminsFilters />
 
-      <Suspense key={JSON.stringify(params)} fallback={<TableSkeleton />}>
-        <AdminsTable searchParams={params} />
-      </Suspense>
+      <AdminsTable searchParams={params} />
     </div>
   );
 }

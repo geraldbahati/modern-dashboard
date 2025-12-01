@@ -14,13 +14,14 @@ import { useState } from "react";
 interface AdminsMetricsListProps {
   metrics: {
     total: number;
-    admins: number;
-    recentlyAdded: number;
-    recentlyUpdated: number;
+    active: number;
+    verified: number;
+    unverified: number;
+    banned: number;
   };
 }
 
-type MetricKey = "total" | "admins" | "recentlyAdded" | "recentlyUpdated";
+type MetricKey = "total" | "active" | "verified" | "unverified" | "banned";
 
 interface MetricConfig {
   id: MetricKey;
@@ -32,23 +33,26 @@ interface MetricConfig {
 
 const metricIcons: Record<MetricKey, React.ElementType> = {
   total: Users,
-  admins: Shield,
-  recentlyAdded: UserPlus,
-  recentlyUpdated: Clock,
+  active: Shield,
+  verified: UserPlus,
+  unverified: Clock,
+  banned: Shield,
 };
 
 const metricTitles: Record<MetricKey, string> = {
-  total: "Total Admins",
-  admins: "Admins with Roles",
-  recentlyAdded: "Recently Added",
-  recentlyUpdated: "Recently Updated",
+  total: "Total Users",
+  active: "Active Users",
+  verified: "Verified Users",
+  unverified: "Unverified Users",
+  banned: "Banned Users",
 };
 
 const metricDescriptions: Record<MetricKey, string> = {
-  total: "All administrators",
-  admins: "Assigned specific roles",
-  recentlyAdded: "In the last 30 days",
-  recentlyUpdated: "In the last 30 days",
+  total: "All registered users",
+  active: "Users with active status",
+  verified: "Email verified",
+  unverified: "Email not verified",
+  banned: "Restricted access",
 };
 
 function MetricCard({
@@ -98,9 +102,9 @@ function MetricCard({
 export function AdminsMetricsList({ metrics }: AdminsMetricsListProps) {
   const [items, setItems] = useState<MetricKey[]>([
     "total",
-    "admins",
-    "recentlyAdded",
-    "recentlyUpdated",
+    "active",
+    "verified",
+    "unverified",
   ]);
 
   const displayMetrics: MetricConfig[] = items.map((key) => ({

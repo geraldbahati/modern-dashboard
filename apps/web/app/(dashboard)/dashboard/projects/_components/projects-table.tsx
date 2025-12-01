@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Table,
   TableBody,
@@ -9,9 +11,11 @@ import {
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { Eye } from "lucide-react";
-import { getProjects } from "../_lib/actions";
-import { Pagination } from "../../users/_components/pagination"; // Reusing pagination
+import { Pagination } from "../../users/_components/pagination";
 import { ProjectActions } from "./project-actions";
+import { useQuery } from "@tanstack/react-query";
+import { orpc } from "@/lib/orpc";
+import { TableSkeleton } from "../../_components/table-skeleton";
 
 interface ProjectsTableProps {
   searchParams: {
@@ -22,17 +26,54 @@ interface ProjectsTableProps {
   };
 }
 
-export async function ProjectsTable({ searchParams }: ProjectsTableProps) {
+export function ProjectsTable({ searchParams }: ProjectsTableProps) {
   const page = searchParams.page ? parseInt(searchParams.page) : 1;
-  const status = searchParams.status as any; // Cast to valid type
-  const environment = searchParams.environment as any;
+  const status = searchParams.status as
+    | "active"
+    | "archived"
+    | "deleted"
+    | undefined;
+  const environment = searchParams.environment as
+    | "production"
+    | "staging"
+    | "development"
+    | undefined;
 
-  const { projects, pagination } = await getProjects({
-    page,
-    search: searchParams.search,
-    status,
-    environment,
-  });
+  const { data, isLoading, error } = useQuery(
+    orpc.projects.list.queryOptions({
+      input: {
+        limit: 10,
+        offset: (page - 1) * 10,
+        search: searchParams.search,
+        status,
+        environment,
+      },
+    })
+  );
+
+  if (isLoading) {
+    return <TableSkeleton />;
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-xl border bg-card p-8 text-center text-muted-foreground">
+        Failed to load projects. Please try again.
+      </div>
+    );
+  }
+
+  const projects = data?.data || [];
+  const total = data?.total || 0;
+
+  const pagination = {
+    currentPage: page,
+    totalPages: Math.ceil(total / 10),
+    totalItems: total,
+    itemsPerPage: 10,
+    startIndex: total === 0 ? 0 : (page - 1) * 10 + 1,
+    endIndex: Math.min((page - 1) * 10 + 10, total),
+  };
 
   return (
     <>
@@ -102,7 +143,11 @@ export async function ProjectsTable({ searchParams }: ProjectsTableProps) {
                   </TableCell>
                   <TableCell>Production</TableCell>
                   <TableCell className="text-muted-foreground">
-                    {project.lastUpdated}
+                    {new Date(project.updatedAt).toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                    })}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
