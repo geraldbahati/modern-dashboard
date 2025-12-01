@@ -6,8 +6,9 @@ import { cookies } from "next/headers";
 
 // Create API client with auth cookies
 const getApiClient = async () => {
-  // Use API_URL from environment, fallback to localhost for dev
-  const baseUrl = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+  // Always use NEXT_PUBLIC_API_URL to ensure cookie domain matches
+  // In Docker, this will still be localhost:3001 accessed from browser
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   const cookieStore = await cookies();
 
   return createClient({

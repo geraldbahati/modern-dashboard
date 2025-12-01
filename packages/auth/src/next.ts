@@ -27,7 +27,13 @@ const baseURL = process.env.BETTER_AUTH_URL || "http://localhost:3000";
 
 export const auth = createNextAuth({
   baseURL,
-  trustedOrigins: [baseURL, "http://localhost:3001"],
+  trustedOrigins: [
+    baseURL,
+    "http://localhost:3001",
+    "http://localhost:3000",
+    "http://server:3001", // Docker internal
+    "http://web:3000", // Docker internal
+  ],
 });
 
 // Re-export for convenience

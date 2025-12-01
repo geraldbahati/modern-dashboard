@@ -8,10 +8,12 @@ import { createAuth } from "@workspace/auth/server";
 // Environment configuration
 const baseURL = process.env.BETTER_AUTH_URL || "http://localhost:3001";
 const trustedOrigins = [
-  "http://localhost:3000", // Next.js frontend
-  "http://localhost:3001", // Hono server
-  process.env.FRONTEND_URL, // Production frontend
-  process.env.BETTER_AUTH_URL, // Production server
+  "http://localhost:3000", // Next.js frontend (local dev)
+  "http://localhost:3001", // Hono server (local dev)
+  "http://web:3000", // Next.js frontend (Docker internal)
+  "http://server:3001", // Hono server (Docker internal)
+  process.env.FRONTEND_URL, // Production frontend URL
+  process.env.BETTER_AUTH_URL, // Production server URL
 ].filter((url) => url !== undefined) as string[];
 
 // Create auth instance using shared config
