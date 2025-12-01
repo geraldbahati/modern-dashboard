@@ -47,10 +47,18 @@ app.use("*", logger());
 // CORS - must be before routes
 app.use("*", (c, next) => {
   const frontendUrl = c.env.FRONTEND_URL || "http://localhost:3000";
+  const allowedOrigins = [
+    "http://localhost:3000", // Local dev
+    "https://modern-dashboard-web.vercel.app", // Production frontend
+    frontendUrl, // Additional frontend URL from env
+  ].filter((url) => url !== undefined);
+
   return cors({
-    origin: [frontendUrl],
-    allowHeaders: ["Content-Type", "Authorization"],
+    origin: allowedOrigins,
+    allowHeaders: ["Content-Type", "Authorization", "Cookie"],
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    exposeHeaders: ["Content-Length", "Set-Cookie"],
+    maxAge: 600,
     credentials: true,
   })(c, next);
 });

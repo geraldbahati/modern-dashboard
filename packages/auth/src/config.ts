@@ -31,6 +31,8 @@ export interface AuthConfigParams {
 export const getBaseAuthConfig = (
   params: AuthConfigParams
 ): BetterAuthOptions => {
+  const isProduction = process.env.NODE_ENV === "production";
+
   return {
     database: drizzleAdapter(authDb, { provider: "pg" }),
     baseURL: params.baseURL,
@@ -130,8 +132,10 @@ export const getBaseAuthConfig = (
     ],
     advanced: {
       defaultCookieAttributes: {
-        sameSite: "None",
-        secure: true,
+        sameSite: isProduction ? "none" : "lax",
+        secure: isProduction,
+        httpOnly: true,
+        path: "/",
       },
     },
   };

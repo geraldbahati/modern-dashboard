@@ -24,8 +24,10 @@ export function createAuthInstance(env: AuthEnv) {
   const trustedOrigins = [
     "http://localhost:3000", // Next.js frontend (local dev)
     "http://localhost:3001", // Hono server (local dev)
-    env.FRONTEND_URL, // Production frontend URL
-    env.BETTER_AUTH_URL, // Production server URL
+    "https://modern-dashboard-web.vercel.app", // Production frontend URL
+    "https://modern-dashboard-server.journeytoharvard.workers.dev", // Production server URL
+    env.FRONTEND_URL, // Additional frontend URL from env
+    env.BETTER_AUTH_URL, // Additional server URL from env
   ].filter((url) => url !== undefined) as string[];
 
   return createAuth({

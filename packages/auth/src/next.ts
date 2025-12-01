@@ -24,6 +24,7 @@ export function createNextAuth(params: AuthConfigParams) {
 
 // Default Next.js auth instance
 const baseURL = process.env.BETTER_AUTH_URL || "http://localhost:3000";
+const isProduction = process.env.NODE_ENV === "production";
 
 export const auth = createNextAuth({
   baseURL,
@@ -33,6 +34,12 @@ export const auth = createNextAuth({
     "http://localhost:3000",
     "http://server:3001", // Docker internal
     "http://web:3000", // Docker internal
+    ...(isProduction
+      ? [
+          "https://modern-dashboard-web.vercel.app",
+          "https://modern-dashboard-server.journeytoharvard.workers.dev",
+        ]
+      : []),
   ],
 });
 

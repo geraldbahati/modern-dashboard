@@ -18,6 +18,9 @@ import {
 
 export const authClient = createAuthClient({
   baseURL: process.env.NEXT_PUBLIC_AUTH_URL || "http://localhost:3000/api/auth",
+  fetchOptions: {
+    credentials: "include",
+  },
   plugins: [
     inferAdditionalFields<Auth>(),
     adminClient({
