@@ -1,3 +1,7 @@
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import { orpc } from "@/lib/orpc";
 import {
   Table,
   TableBody,
@@ -10,9 +14,9 @@ import { Badge } from "@workspace/ui/components/badge";
 import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar";
 import { Button } from "@workspace/ui/components/button";
 import { Eye } from "lucide-react";
-import { getUsers } from "../_lib/actions";
 import { UserActions } from "./user-actions";
 import { Pagination } from "./pagination";
+import { TableSkeleton } from "../../_components/table-skeleton";
 
 interface UsersTableProps {
   searchParams: {
@@ -27,19 +31,52 @@ interface UsersTableProps {
   };
 }
 
-export async function UsersTable({ searchParams }: UsersTableProps) {
+export function UsersTable({ searchParams }: UsersTableProps) {
   const page = searchParams.page ? parseInt(searchParams.page) : 1;
 
-  const { users, pagination } = await getUsers({
-    page,
-    username: searchParams.username,
-    email: searchParams.email,
+  const {
+    data,
+    isLoading,
+    error,
+  } = useQuery(
+    orpc.users.list.queryOptions({
+      page,
+      limit: 10,
+      offset: (page - 1) * 10,
+      username: searchParams.username,
+      email: searchParams.email,
+      firstName: searchParams.firstName,
+      lastName: searchParams.lastName,
+      fromDate: searchParams.fromDate,
+      toDate: searchParams.toDate,
+    })
+  );
 
-    firstName: searchParams.firstName,
-    lastName: searchParams.lastName,
-    fromDate: searchParams.fromDate,
-    toDate: searchParams.toDate,
-  });
+  if (isLoading) {
+    return <TableSkeleton />;
+  }
+
+  if (error || !data) {
+    return (
+      <div className="rounded-xl border bg-card p-8 text-center">
+        <p className="text-sm text-muted-foreground">
+          Failed to load users. Please try again.
+        </p>
+      </div>
+    );
+  }
+
+  const users = data.users.map((u) => ({
+    ...u,
+    joinedDate: new Date(u.createdAt).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }),
+    status: u.emailVerified ? ("verified" as const) : ("unverified" as const),
+  }));
+
+  const pagination = data.pagination;
 
   return (
     <>
