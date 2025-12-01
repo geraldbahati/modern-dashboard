@@ -78,6 +78,9 @@ importers:
 
   apps/server-cloudflare:
     dependencies:
+      '@arcjet/node':
+        specifier: ^1.0.0-alpha.34
+        version: 1.0.0-beta.15
       '@hono/node-server':
         specifier: ^1.19.6
         version: 1.19.6(hono@4.10.7)
