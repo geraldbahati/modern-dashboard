@@ -20,6 +20,7 @@
     "./rules": "./src/rules.ts",
     "./bun": "./src/bun.ts",
     "./node": "./src/node.ts",
-    "./next": "./src/next.ts"
+    "./next": "./src/next.ts",
+    "./cloudflare": "./src/cloudflare.ts"
   }
 }

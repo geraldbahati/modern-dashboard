@@ -15,7 +15,10 @@ import {
 } from "./middleware/security";
 
 // Cloudflare Workers environment bindings
+import type { RateLimitBinding } from "@workspace/security/cloudflare";
+
 type Bindings = {
+  // Environment variables
   BETTER_AUTH_URL?: string;
   FRONTEND_URL?: string;
   BETTER_AUTH_SECRET?: string;
@@ -27,6 +30,10 @@ type Bindings = {
   GOOGLE_CLIENT_SECRET?: string;
   GITHUB_CLIENT_ID?: string;
   GITHUB_CLIENT_SECRET?: string;
+
+  // Rate limiters
+  AUTH_RATE_LIMITER?: RateLimitBinding;
+  API_RATE_LIMITER?: RateLimitBinding;
 };
 
 // Combined app variables

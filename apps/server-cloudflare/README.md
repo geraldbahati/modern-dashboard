@@ -74,11 +74,18 @@ This generates a `worker-configuration.d.ts` file with your bindings.
 - We enable `nodejs_compat` flag for `process.env` support during development
 
 ### Security Middleware
-- **Node.js server**: Uses Arcjet for rate limiting and bot protection
-- **Cloudflare Workers**: Arcjet doesn't support Workers. Use Cloudflare's built-in features:
-  - [Rate Limiting](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/)
-  - [WAF](https://developers.cloudflare.com/waf/)
-  - [Bot Management](https://developers.cloudflare.com/bots/)
+- **Node.js server**: Uses Arcjet for rate limiting, WAF, and bot protection
+- **Cloudflare Workers**: Uses native Cloudflare features:
+  - **Rate Limiting**: Configured via `limits` in `wrangler.jsonc`
+    - `AUTH_RATE_LIMITER`: 10 requests/minute for auth routes
+    - `API_RATE_LIMITER`: 100 requests/minute for API routes
+  - **WAF**: Basic pattern matching for SQL injection, XSS, path traversal
+  - **Bot Detection**: User-Agent based detection (allows search engines, blocks scrapers)
+
+  For production:
+  - Enable [Cloudflare WAF](https://developers.cloudflare.com/waf/) in dashboard
+  - Enable [Bot Management](https://developers.cloudflare.com/bots/) for advanced bot detection
+  - Adjust rate limits in `wrangler.jsonc` based on your needs
 
 ### Database
 - Both use Neon's HTTP driver (`@neondatabase/serverless`), which works in Workers

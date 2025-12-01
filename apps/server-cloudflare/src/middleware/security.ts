@@ -1,42 +1,83 @@
 /**
  * Security middleware for Cloudflare Workers
- * NOTE: Arcjet's Node.js SDK doesn't work in Cloudflare Workers
- * For production, use Cloudflare's built-in security features:
- * - Rate Limiting: https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/
- * - WAF: Configure in Cloudflare Dashboard
- * - Bot Management: Use Cloudflare Bot Management
- *
- * For now, this is a passthrough middleware
+ * Uses Cloudflare's native security features and custom WAF/bot detection
  */
 
 import { createMiddleware } from "hono/factory";
+import {
+  checkSecurity,
+  type RateLimitBinding,
+} from "@workspace/security/cloudflare";
 import type { AuthVariables } from "./auth";
 
-// Note: Arcjet doesn't support Cloudflare Workers yet
-// Using passthrough middleware for now
-const authArcjet = null;
-const apiArcjet = null;
+// Type for Cloudflare bindings
+type SecurityBindings = {
+  AUTH_RATE_LIMITER?: RateLimitBinding;
+  API_RATE_LIMITER?: RateLimitBinding;
+};
 
 /**
  * Security middleware for auth routes (/api/auth/*)
- * Passthrough for now - use Cloudflare's security features in production
+ * Applies stricter rate limiting (configured in wrangler.jsonc)
  */
 export const authSecurityMiddleware = createMiddleware<{
   Variables: AuthVariables;
+  Bindings: SecurityBindings;
 }>(async (c, next) => {
-  // TODO: Implement Cloudflare Workers rate limiting
-  // See: https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/
+  const user = c.get("user");
+  const userId = user?.id || "anonymous";
+
+  const decision = await checkSecurity({
+    rateLimiter: c.env.AUTH_RATE_LIMITER,
+    userId,
+    userAgent: c.req.header("user-agent"),
+    url: c.req.url,
+    body: c.req.method !== "GET" ? await c.req.text() : undefined,
+  });
+
+  if (!decision.allowed) {
+    const statusCode = decision.reason === "RATE_LIMIT" ? 429 : 403;
+    return c.json(
+      {
+        error: decision.reason || "FORBIDDEN",
+        message: decision.message || "Request blocked",
+      },
+      statusCode
+    );
+  }
+
   await next();
 });
 
 /**
  * Security middleware for general API routes
- * Passthrough for now - use Cloudflare's security features in production
+ * Applies standard rate limiting
  */
 export const apiSecurityMiddleware = createMiddleware<{
   Variables: AuthVariables;
+  Bindings: SecurityBindings;
 }>(async (c, next) => {
-  // TODO: Implement Cloudflare Workers rate limiting
-  // See: https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/
+  const user = c.get("user");
+  const userId = user?.id || "anonymous";
+
+  const decision = await checkSecurity({
+    rateLimiter: c.env.API_RATE_LIMITER,
+    userId,
+    userAgent: c.req.header("user-agent"),
+    url: c.req.url,
+    body: c.req.method !== "GET" ? await c.req.text() : undefined,
+  });
+
+  if (!decision.allowed) {
+    const statusCode = decision.reason === "RATE_LIMIT" ? 429 : 403;
+    return c.json(
+      {
+        error: decision.reason || "FORBIDDEN",
+        message: decision.message || "Request blocked",
+      },
+      statusCode
+    );
+  }
+
   await next();
 });
