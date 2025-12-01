@@ -10,9 +10,9 @@
   // For local development, use localhost URLs
   // For production, update to your Workers URLs before deploying
   "vars": {
-    "NODE_ENV": "development",
-    "BETTER_AUTH_URL": "http://localhost:8787",
-    "FRONTEND_URL": "http://localhost:3000",
+    "NODE_ENV": "production",
+    "BETTER_AUTH_URL": "https://modern-dashboard-server.journeytoharvard.workers.dev",
+    "FRONTEND_URL": "https://modern-dashboard-web.vercel.app",
   },
   // Rate limiting configuration
   // Note: Cloudflare Rate Limiting API requires a paid Workers plan
@@ -59,8 +59,14 @@
   // "ai": {
   //   "binding": "AI"
   // },
-  // "observability": {
-  //   "enabled": true,
-  //   "head_sampling_rate": 1
-  // }
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "persist": true,
+      "invocation_logs": true,
+    },
+  },
 }

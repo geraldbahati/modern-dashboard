@@ -128,6 +128,12 @@ export const getBaseAuthConfig = (
       }),
       openAPI(),
     ],
+    advanced: {
+      defaultCookieAttributes: {
+        sameSite: "None",
+        secure: true,
+      },
+    },
   };
 };
 
