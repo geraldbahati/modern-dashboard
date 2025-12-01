@@ -26,11 +26,15 @@ export const api = createBrowserClient(`${API_URL}/api/rpc`);
  */
 export const createServerApi = (headers?: HeadersInit) => {
   const { createClient } = require("@workspace/api/client");
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
   return createClient({
     baseUrl: `${API_URL}/api/rpc`,
     headers: headers
-      ? () => Object.fromEntries(new Headers(headers).entries())
+      ? () => ({
+          ...Object.fromEntries(new Headers(headers).entries()),
+          origin: appUrl,
+        })
       : undefined,
   });
 };

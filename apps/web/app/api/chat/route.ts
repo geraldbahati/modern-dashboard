@@ -50,10 +50,14 @@ export async function POST(req: Request) {
       process.env.NEXT_PUBLIC_API_URL ||
       "http://localhost:3001";
     const RPC_URL = `${API_URL}/api/rpc`;
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
     const client = createClient({
       baseUrl: RPC_URL,
-      headers: () => ({ cookie: cookieStore.toString() }),
+      headers: () => ({
+        cookie: cookieStore.toString(),
+        origin: appUrl,
+      }),
     });
 
     const coreMessages = convertToModelMessages(messages);
