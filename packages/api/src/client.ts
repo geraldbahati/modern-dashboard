@@ -13,21 +13,25 @@ export type Client = RouterClient<AppRouter>;
 
 export interface ClientOptions {
   baseUrl: string;
-  headers?: Record<string, string> | (() => Record<string, string>);
+  headers?: Record<string, string> | (() => Record<string, string> | Promise<Record<string, string>>);
 }
 
 /**
  * Create a typed oRPC client
+ * This is used for server-side requests where we need to forward cookies manually
  */
 export const createClient = (options: ClientOptions): Client => {
   const link = new RPCLink({
     url: options.baseUrl,
     headers: options.headers,
-    fetch: (input, init) =>
-      fetch(input, {
+    fetch: (input, init) => {
+      // For server-side requests, include credentials
+      // This ensures cookies are sent with the request
+      return fetch(input, {
         ...init,
         credentials: "include",
-      }),
+      });
+    },
   });
 
   return createORPCClient(link);
