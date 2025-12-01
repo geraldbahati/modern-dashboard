@@ -4,6 +4,24 @@ version: '3.9'
 # Includes health checks, resource limits, and restart policies
 
 services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      - DOMAIN_NAME=${DOMAIN_NAME}
+    networks:
+      - app-network
+    depends_on:
+      - web
+      - server
+
   web:
     build:
       context: .
@@ -100,6 +118,9 @@ networks:
         - subnet: 172.25.0.0/16
 
 # Volumes for persistent data (if needed in the future)
-# volumes:
+# Volumes for persistent data
+volumes:
+  caddy_data:
+  caddy_config:
 #   uploads:
 #   cache:
