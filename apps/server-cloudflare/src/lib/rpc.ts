@@ -25,14 +25,27 @@ interface UserWithRole {
  */
 export async function getAuthContext(headers: Headers): Promise<AuthContext> {
   try {
+    // Debug: Log cookies being received
+    const cookieHeader = headers.get("cookie");
+    if (process.env.NODE_ENV === "development") {
+      console.log("[RPC] Cookies received:", cookieHeader ? "present" : "none");
+    }
+
     const session = await auth.api.getSession({ headers });
 
     if (!session?.user || !session?.session) {
+      if (process.env.NODE_ENV === "development") {
+        console.log("[RPC] No valid session found");
+      }
       return { user: null, session: null };
     }
 
     // Cast to include role field from admin plugin
     const user = session.user as UserWithRole;
+
+    if (process.env.NODE_ENV === "development") {
+      console.log("[RPC] Session found for user:", user.email);
+    }
 
     return {
       user: {
@@ -46,7 +59,10 @@ export async function getAuthContext(headers: Headers): Promise<AuthContext> {
         expiresAt: session.session.expiresAt,
       },
     };
-  } catch {
+  } catch (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.error("[RPC] Error getting auth context:", error);
+    }
     return { user: null, session: null };
   }
 }

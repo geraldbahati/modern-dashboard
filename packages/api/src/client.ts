@@ -23,6 +23,11 @@ export const createClient = (options: ClientOptions): Client => {
   const link = new RPCLink({
     url: options.baseUrl,
     headers: options.headers,
+    fetch: (input, init) =>
+      fetch(input, {
+        ...init,
+        credentials: "include",
+      }),
   });
 
   return createORPCClient(link);

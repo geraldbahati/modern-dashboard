@@ -30,11 +30,19 @@ const getApiClient = async () => {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const cookieStore = await cookies();
+  const cookieString = cookieStore.toString();
+
+  // Debug logging in development
+  if (process.env.NODE_ENV === "development") {
+    console.log("[API Client] baseUrl:", baseUrl);
+    console.log("[API Client] appUrl:", appUrl);
+    console.log("[API Client] Cookies:", cookieString ? "present" : "none");
+  }
 
   return createClient({
     baseUrl: baseUrl + "/api/rpc",
     headers: {
-      cookie: cookieStore.toString(),
+      cookie: cookieString,
       origin: appUrl,
     },
   });
