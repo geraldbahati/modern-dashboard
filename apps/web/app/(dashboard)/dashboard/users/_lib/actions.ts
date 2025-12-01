@@ -28,12 +28,14 @@ const getApiClient = async () => {
   // Always use NEXT_PUBLIC_API_URL to ensure cookie domain matches
   // In Docker, this will still be localhost:3001 accessed from browser
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const cookieStore = await cookies();
 
   return createClient({
     baseUrl: baseUrl + "/api/rpc",
     headers: {
       cookie: cookieStore.toString(),
+      origin: appUrl,
     },
   });
 };

@@ -38,10 +38,15 @@ export const orpc = createTanstackQueryUtils(browserClient);
  * ```
  */
 export function createServerOrpc(cookieHeader?: string) {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
   const serverClient = createClient({
     baseUrl: RPC_URL,
     headers: cookieHeader
-      ? () => ({ cookie: cookieHeader })
+      ? () => ({
+          cookie: cookieHeader,
+          origin: appUrl,
+        })
       : undefined,
   });
 
