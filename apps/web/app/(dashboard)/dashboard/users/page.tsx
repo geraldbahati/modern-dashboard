@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import { connection } from "next/server";
 import { Metadata } from "next";
 import { DashboardHeader } from "../_components/dashboard-header";
 import { Button } from "@workspace/ui/components/button";
@@ -8,6 +7,7 @@ import { UsersTable } from "./_components/users-table";
 import { UsersFilters } from "./_components/users-filters";
 import { MetricsSkeleton } from "../_components/metrics-skeleton";
 import { TableSkeleton } from "../_components/table-skeleton";
+import { UsersPageClientWrapper } from "./_components/users-page-client-wrapper";
 
 export const metadata: Metadata = {
   title: "Users Management | Dashboard",
@@ -41,34 +41,37 @@ interface UsersPageProps {
 }
 
 export default async function UsersPage({ searchParams }: UsersPageProps) {
-  // Defer to request time to access runtime data (required for Next.js 16 with PPR)
-  await connection();
-
   const params = await searchParams;
 
   return (
-    <div className="space-y-6">
-      <DashboardHeader
-        title="All Users"
-        description="Manage platform users and accounts"
-      >
-        <Button size="sm" className="h-8">
-          Create User
-        </Button>
-      </DashboardHeader>
+    <UsersPageClientWrapper>
+      {({ canManageUsers }) => (
+        <div className="space-y-6">
+          <DashboardHeader
+            title="All Users"
+            description="Manage platform users and accounts"
+          >
+            {canManageUsers && (
+              <Button size="sm" className="h-8">
+                Create User
+              </Button>
+            )}
+          </DashboardHeader>
 
-      {/* Metrics Cards - Cached and included in static shell */}
-      <Suspense fallback={<MetricsSkeleton />}>
-        <UsersMetrics />
-      </Suspense>
+          {/* Metrics Cards - Cached and included in static shell */}
+          <Suspense fallback={<MetricsSkeleton />}>
+            <UsersMetrics />
+          </Suspense>
 
-      {/* Filters - Client Component for interactivity */}
-      <UsersFilters />
+          {/* Filters - Client Component for interactivity */}
+          <UsersFilters />
 
-      {/* Data Table - Streaming with Suspense */}
-      <Suspense key={JSON.stringify(params)} fallback={<TableSkeleton />}>
-        <UsersTable searchParams={params} />
-      </Suspense>
-    </div>
+          {/* Data Table - Streaming with Suspense */}
+          <Suspense key={JSON.stringify(params)} fallback={<TableSkeleton />}>
+            <UsersTable searchParams={params} />
+          </Suspense>
+        </div>
+      )}
+    </UsersPageClientWrapper>
   );
 }

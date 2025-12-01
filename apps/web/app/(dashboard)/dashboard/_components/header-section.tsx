@@ -11,7 +11,6 @@ import {
   Sun,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useSession } from "@workspace/auth/client";
 import { useWeather } from "../../../../hooks/use-weather";
 import { Skeleton } from "@workspace/ui/components/skeleton";
 import { DashboardCard } from "@workspace/ui/components/dashboard-card";
@@ -46,14 +45,17 @@ export function HeaderSectionSkeleton() {
   );
 }
 
-export default function HeaderSection() {
+interface HeaderSectionProps {
+  userName?: string;
+}
+
+export default function HeaderSection({ userName }: HeaderSectionProps) {
   const [mounted, setMounted] = useState(false);
   const [date, setDate] = useState(new Date());
-  const { data: session, isPending } = useSession();
   const { weather, loading, error } = useWeather();
 
   // Get first name from full name
-  const displayName = session?.user?.name?.split(" ")[0] || "there";
+  const displayName = userName?.split(" ")[0] || "there";
 
   useEffect(() => {
     setMounted(true);
@@ -132,7 +134,7 @@ export default function HeaderSection() {
   // Prevent hydration mismatch by rendering a placeholder or static content initially
   // However, for a clock, it's better to render nothing or a skeleton until mounted
   // to avoid the flash of incorrect time.
-  if (!mounted || isPending) {
+  if (!mounted) {
     return <HeaderSectionSkeleton />;
   }
 
