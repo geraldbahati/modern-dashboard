@@ -26,6 +26,10 @@ export function createNextAuth(params: AuthConfigParams) {
 const baseURL = process.env.BETTER_AUTH_URL || "http://localhost:3000";
 const isProduction = process.env.NODE_ENV === "production";
 
+console.log("[Next Auth] Initializing with baseURL:", baseURL);
+console.log("[Next Auth] NODE_ENV:", process.env.NODE_ENV);
+console.log("[Next Auth] Is production:", isProduction);
+
 export const auth = createNextAuth({
   baseURL,
   trustedOrigins: [

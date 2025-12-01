@@ -49,13 +49,24 @@ export default async function DashboardPage() {
   const serverOrpc = createServerOrpc(cookieStore.toString());
 
   // Fetch session to get user role
+  const headersList = await headers();
+  const cookieHeader = headersList.get("cookie");
+
+  console.log("[Dashboard] Cookie header present:", !!cookieHeader);
+  console.log("[Dashboard] Cookie header length:", cookieHeader?.length || 0);
+
   const session = await auth.api.getSession({
-    headers: await headers(),
+    headers: headersList,
   });
+
+  console.log("[Dashboard] Session found:", !!session);
+  console.log("[Dashboard] User found:", !!session?.user);
+  console.log("[Dashboard] User name:", session?.user?.name || "none");
+
   const user = session?.user as UserWithRole | undefined;
   const userRole = (user?.role as RoleName) || "user";
 
-  console.log("User role:", userRole);
+  console.log("[Dashboard] User role:", userRole);
 
   // Prefetch metrics data on the server
   // Wrapped in try-catch to handle auth errors gracefully
