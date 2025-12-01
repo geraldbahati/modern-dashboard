@@ -48,25 +48,15 @@ export default async function DashboardPage() {
   const cookieStore = await cookies();
   const serverOrpc = createServerOrpc(cookieStore.toString());
 
-  // Fetch session to get user role
-  const headersList = await headers();
-  const cookieHeader = headersList.get("cookie");
-
-  console.log("[Dashboard] Cookie header present:", !!cookieHeader);
-  console.log("[Dashboard] Cookie header length:", cookieHeader?.length || 0);
-
+  // Fetch session to get user role for permission checks
+  // Note: Server components can't reliably access browser cookies during SSR
+  // Use client components (useSession) for displaying user data
   const session = await auth.api.getSession({
-    headers: headersList,
+    headers: await headers(),
   });
-
-  console.log("[Dashboard] Session found:", !!session);
-  console.log("[Dashboard] User found:", !!session?.user);
-  console.log("[Dashboard] User name:", session?.user?.name || "none");
 
   const user = session?.user as UserWithRole | undefined;
   const userRole = (user?.role as RoleName) || "user";
-
-  console.log("[Dashboard] User role:", userRole);
 
   // Prefetch metrics data on the server
   // Wrapped in try-catch to handle auth errors gracefully
@@ -96,7 +86,7 @@ export default async function DashboardPage() {
         {/* Left Column (Main Content) */}
         <div className="lg:col-span-2 flex flex-col gap-6">
           <Suspense fallback={<HeaderSectionSkeleton />}>
-            <HeaderSection userName={user?.name} />
+            <HeaderSection />
           </Suspense>
 
           {canViewAnalytics && (

@@ -36,21 +36,18 @@ const getApiClient = async () => {
   const cookieStore = await cookies();
   const cookieString = cookieStore.toString();
 
-  // Debug logging
-  console.log("[API Client] baseUrl:", baseUrl);
-  console.log("[API Client] appUrl:", appUrl);
-  console.log("[API Client] Cookie string length:", cookieString?.length || 0);
-  console.log("[API Client] Cookie preview:", cookieString?.substring(0, 50) || "none");
+  // Debug logging in development only
+  if (process.env.NODE_ENV === "development") {
+    console.log("[API Client] baseUrl:", baseUrl);
+    console.log("[API Client] Cookie string length:", cookieString?.length || 0);
+  }
 
   return createClient({
     baseUrl: baseUrl + "/api/rpc",
-    headers: () => {
-      console.log("[API Client Headers] Returning headers with cookie");
-      return {
-        cookie: cookieString,
-        origin: appUrl,
-      };
-    },
+    headers: () => ({
+      cookie: cookieString,
+      origin: appUrl,
+    }),
   });
 };
 
