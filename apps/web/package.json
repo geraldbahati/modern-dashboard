@@ -6,12 +6,16 @@
     "dev": "next dev --port 3000",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
   "dependencies": {
     "@ai-sdk/react": "^2.0.102",
     "@ai-sdk/rsc": "^1.0.103",
     "@hookform/resolvers": "^5.2.2",
+    "@opennextjs/cloudflare": "^1.14.0",
     "@orpc/client": "^1.0.0",
     "@orpc/tanstack-query": "^1.11.3",
     "@splinetool/react-spline": "^4.1.0",
@@ -45,6 +49,7 @@
     "@workspace/typescript-config": "workspace:*",
     "babel-plugin-react-compiler": "^1.0.0",
     "eslint": "^9.32.0",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "wrangler": "^4.51.0"
   }
 }
