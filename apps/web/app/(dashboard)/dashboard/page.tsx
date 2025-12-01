@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { connection } from "next/server";
 import { cookies, headers } from "next/headers";
 import HeaderSection, {
   HeaderSectionSkeleton,
@@ -40,6 +41,9 @@ interface UserWithRole {
 }
 
 export default async function DashboardPage() {
+  // Defer to request time to access runtime data (required for Next.js 16 with PPR)
+  await connection();
+
   const queryClient = getQueryClient();
   const cookieStore = await cookies();
   const serverOrpc = createServerOrpc(cookieStore.toString());

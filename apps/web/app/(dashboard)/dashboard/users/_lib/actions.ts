@@ -1,6 +1,7 @@
 "use server";
 
-import { cacheLife, cacheTag, updateTag } from "next/cache";
+import { connection } from "next/server";
+import { updateTag } from "next/cache";
 import { createClient } from "@workspace/api/client";
 import { cookies } from "next/headers";
 
@@ -25,6 +26,9 @@ export type DisplayUser = User & {
 
 // Create API client with auth cookies
 const getApiClient = async () => {
+  // Defer to request time to access runtime data
+  await connection();
+
   // Always use NEXT_PUBLIC_API_URL to ensure cookie domain matches
   // In Docker, this will still be localhost:3001 accessed from browser
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";

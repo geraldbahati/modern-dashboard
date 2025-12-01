@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { connection } from "next/server";
 import { Metadata } from "next";
 import { DashboardHeader } from "../_components/dashboard-header";
 import { Button } from "@workspace/ui/components/button";
@@ -40,8 +41,10 @@ interface UsersPageProps {
 }
 
 export default async function UsersPage({ searchParams }: UsersPageProps) {
+  // Defer to request time to access runtime data (required for Next.js 16 with PPR)
+  await connection();
+
   const params = await searchParams;
-  // Force rebuild
 
   return (
     <div className="space-y-6">
