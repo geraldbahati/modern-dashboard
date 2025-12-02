@@ -63,6 +63,10 @@ export function SignInForm() {
     setError,
   } = useForm<SignInFormData>({
     resolver: zodResolver(signInSchema),
+    defaultValues: {
+      email: "admin+ufpf5ze0@example.com",
+      password: "Admin@123",
+    },
   });
 
   // Check passkey support and enable conditional UI
