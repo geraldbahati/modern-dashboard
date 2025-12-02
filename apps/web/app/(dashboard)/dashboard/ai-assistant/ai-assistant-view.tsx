@@ -58,6 +58,8 @@ import "./tools/task-tools"; // Register task tools
 import "./tools/quick-task-tools"; // Register quick task tools
 import "./tools/analytics-tools"; // Register analytics tools
 
+import { modelsList } from "@workspace/ai/lib/models-list";
+
 const Spline = dynamic(() => import("@splinetool/react-spline"), {
   ssr: false,
   loading: () => (
@@ -71,17 +73,10 @@ interface SplineApp {
   setZoom: (value: number) => void;
 }
 
-const models = [
-  { id: "grok-4.1-fast", name: "Grok 4.1 Fast" },
-  { id: "gpt-4o", name: "GPT-4o" },
-  { id: "claude-opus-4-20250514", name: "Claude 4 Opus" },
-  { id: "deepseek-r1", name: "DeepSeek R1" },
-];
-
 export function AiAssistantView() {
   const isMobile = useIsMobile();
   const [text, setText] = useState<string>("");
-  const [selectedModel, setSelectedModel] = useState<string>(models[0].id);
+  const [selectedModel, setSelectedModel] = useState<string>(modelsList[0].id);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Get user context from session
@@ -234,7 +229,7 @@ export function AiAssistantView() {
       <AiHeader
         selectedModel={selectedModel}
         onModelChange={setSelectedModel}
-        models={models}
+        models={modelsList}
         onNewChat={handleNewChat}
         history={history}
         currentConversationId={currentConversationId}

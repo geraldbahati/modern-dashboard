@@ -22,6 +22,7 @@
     ".": "./src/index.ts",
     "./tools": "./src/tools/index.ts",
     "./provider": "./src/lib/ai-provider.ts",
-    "./system-prompt": "./src/lib/system-prompt.ts"
+    "./system-prompt": "./src/lib/system-prompt.ts",
+    "./lib/models-list": "./src/lib/models-list.ts"
   }
 }

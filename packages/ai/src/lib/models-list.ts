@@ -92,4 +92,30 @@ export const modelsList: ModelOption[] = [
     provider: "DeepSeek",
     description: "Cost-effective model with strong performance",
   },
+  {
+    id: "deepseek-r1",
+    name: "DeepSeek R1",
+    provider: "DeepSeek",
+    description: "Advanced reasoning model",
+  },
+
+  // xAI models
+  {
+    id: "grok-beta",
+    name: "Grok Beta",
+    provider: "xAI",
+    description: "Early access to Grok",
+  },
+  {
+    id: "grok-2-vision-1212",
+    name: "Grok 2 Vision",
+    provider: "xAI",
+    description: "Grok with vision capabilities",
+  },
+  {
+    id: "grok-4.1-fast",
+    name: "Grok 4.1 Fast",
+    provider: "xAI",
+    description: "Fastest Grok model (Free)",
+  },
 ];
