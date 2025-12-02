@@ -9,6 +9,16 @@ import {
   unbanUserSchema,
 } from "@workspace/ai/tools";
 import type { Client } from "../../client.js";
+import type { FullContext } from "../../middleware/auth.js";
+import {
+  listHandler,
+  getByIdHandler,
+  createUserHandler,
+  updateUserHandler,
+  deleteUserHandler,
+  banUserHandler,
+  unbanUserHandler,
+} from "../users.js";
 import { createOrganizationTools } from "./tools/organization-tools.js";
 import { createProjectTools } from "./tools/project-tools.js";
 import { createTaskTools } from "./tools/task-tools.js";
@@ -31,7 +41,7 @@ const serializeUser = (user: any) => {
   };
 };
 
-export const createTools = (client: Client) => ({
+export const createTools = (client: Client, context: FullContext) => ({
   // Spread analytics tools (high priority)
   ...createAnalyticsTools(client),
 
@@ -55,7 +65,11 @@ export const createTools = (client: Client) => ({
     inputSchema: listUsersSchema,
     execute: async (params) => {
       try {
-        const result = await client.users.list(params);
+        // Direct procedure call
+        // Direct procedure call
+        const result = await listHandler({
+          input: { ...params, page: (params as any).page || 1 },
+        });
         return {
           success: true,
           data: result.users.map(serializeUser),
@@ -77,7 +91,11 @@ export const createTools = (client: Client) => ({
     inputSchema: getUserByIdSchema,
     execute: async (params) => {
       try {
-        const user = await client.users.getById({ id: params.userId });
+        // Direct procedure call
+        // Direct procedure call
+        const user = await getByIdHandler({
+          input: { id: params.userId },
+        });
         return {
           success: true,
           data: serializeUser(user),
@@ -99,7 +117,13 @@ export const createTools = (client: Client) => ({
     inputSchema: createUserSchema,
     execute: async (params) => {
       try {
-        const user = await client.users.create(params);
+        // Check permissions
+        if (context.user?.role !== "admin") {
+          throw new Error("Unauthorized: Admin access required");
+        }
+        // Direct procedure call
+        // Direct procedure call
+        const user = await createUserHandler({ input: params });
         return {
           success: true,
           data: serializeUser(user),
@@ -122,7 +146,13 @@ export const createTools = (client: Client) => ({
     inputSchema: updateUserSchema,
     execute: async (params) => {
       try {
-        const user = await client.users.update(params);
+        // Check permissions
+        if (context.user?.role !== "admin") {
+          throw new Error("Unauthorized: Admin access required");
+        }
+        // Direct procedure call
+        // Direct procedure call
+        const user = await updateUserHandler({ input: params });
         return {
           success: true,
           data: serializeUser(user),
@@ -145,7 +175,13 @@ export const createTools = (client: Client) => ({
     inputSchema: banUserSchema,
     execute: async (params) => {
       try {
-        await client.users.ban(params);
+        // Check permissions
+        if (context.user?.role !== "admin") {
+          throw new Error("Unauthorized: Admin access required");
+        }
+        // Direct procedure call
+        // Direct procedure call
+        await banUserHandler({ input: params });
         return {
           success: true,
           message: `User ${params.userId} has been banned`,
@@ -165,7 +201,13 @@ export const createTools = (client: Client) => ({
     inputSchema: unbanUserSchema,
     execute: async (params) => {
       try {
-        await client.users.unban({ id: params.userId });
+        // Check permissions
+        if (context.user?.role !== "admin") {
+          throw new Error("Unauthorized: Admin access required");
+        }
+        // Direct procedure call
+        // Direct procedure call
+        await unbanUserHandler({ input: { id: params.userId } });
         return {
           success: true,
           message: `User ${params.userId} has been unbanned`,
@@ -187,7 +229,13 @@ export const createTools = (client: Client) => ({
     inputSchema: deleteUserSchema,
     execute: async (params) => {
       try {
-        await client.users.delete(params);
+        // Check permissions
+        if (context.user?.role !== "admin") {
+          throw new Error("Unauthorized: Admin access required");
+        }
+        // Direct procedure call
+        // Direct procedure call
+        await deleteUserHandler({ input: params });
         const deleteType = params.permanent
           ? "permanently deleted"
           : "soft deleted";

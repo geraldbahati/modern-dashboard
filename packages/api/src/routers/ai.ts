@@ -41,9 +41,11 @@ export const chat = protectedProcedure
     const coreMessages = convertToModelMessages(messages);
 
     // Create client for tools using the request context
-    // Extract cookies from headers
+    // Extract cookies and other headers
     const cookie = headers.get("cookie") || "";
     const origin = headers.get("origin") || headers.get("referer") || "";
+    const userAgent = headers.get("user-agent") || "";
+    const ip = headers.get("x-forwarded-for") || headers.get("x-real-ip") || "";
 
     const API_URL =
       process.env.API_URL ||
@@ -56,6 +58,8 @@ export const chat = protectedProcedure
       headers: () => ({
         cookie,
         origin,
+        "user-agent": userAgent,
+        "x-forwarded-for": ip,
       }),
     });
 
@@ -90,7 +94,7 @@ export const chat = protectedProcedure
       onFinish: async ({ text, finishReason, usage }) => {
         console.log("Stream finished:", { text, finishReason, usage });
       },
-      tools: createTools(client),
+      tools: createTools(client, context),
     });
 
     // Convert to event iterator for streaming over oRPC
