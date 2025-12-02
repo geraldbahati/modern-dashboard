@@ -274,7 +274,7 @@ export function AiAssistantView() {
         strokeDasharray={"4 2"}
         className="[mask-image:radial-gradient(600px_circle_at_center,white,transparent)] opacity-50 pointer-events-none"
       />
-      <Conversation className="z-10 w-full mx-auto pt-16 pointer-events-none">
+      <Conversation className="z-10 max-w-4xl mx-auto pt-16 pointer-events-none">
         <ScrollManager messages={messages} />
         {messages.length === 0 ? (
           <ConversationEmptyState

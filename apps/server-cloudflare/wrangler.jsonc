@@ -60,7 +60,7 @@
   //   "binding": "AI"
   // },
   "limits": {
-    "cpu_ms": 1000
+    "cpu_ms": 30000,
   },
   "observability": {
     "enabled": true,
