@@ -17,7 +17,7 @@ import {
 } from "./permissions";
 
 export const authClient = createAuthClient({
-  baseURL: process.env.NEXT_PUBLIC_AUTH_URL || "http://localhost:3000/api/auth",
+  baseURL: process.env.NEXT_PUBLIC_AUTH_URL || "http://localhost:3001/api/auth",
   fetchOptions: {
     credentials: "include",
   },
@@ -52,9 +52,13 @@ export type Session = typeof authClient.$Infer.Session;
  * Sign in with GitHub OAuth
  */
 export const signInWithGitHub = async (callbackURL?: string) => {
+  const url = callbackURL?.startsWith("/")
+    ? window.location.origin + callbackURL
+    : callbackURL || window.location.origin;
+
   await authClient.signIn.social({
     provider: "github",
-    callbackURL: callbackURL || window.location.origin,
+    callbackURL: url,
   });
 };
 
@@ -62,8 +66,12 @@ export const signInWithGitHub = async (callbackURL?: string) => {
  * Sign in with Google OAuth
  */
 export const signInWithGoogle = async (callbackURL?: string) => {
+  const url = callbackURL?.startsWith("/")
+    ? window.location.origin + callbackURL
+    : callbackURL || window.location.origin;
+
   await authClient.signIn.social({
     provider: "google",
-    callbackURL: callbackURL || window.location.origin,
+    callbackURL: url,
   });
 };
