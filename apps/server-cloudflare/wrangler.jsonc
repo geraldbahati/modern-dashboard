@@ -59,6 +59,9 @@
   // "ai": {
   //   "binding": "AI"
   // },
+  "limits": {
+    "cpu_ms": 1000
+  },
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1,

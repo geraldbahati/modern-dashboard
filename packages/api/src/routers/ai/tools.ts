@@ -66,6 +66,8 @@ export const createTools = (client: Client) => ({
           success: false,
           error:
             error instanceof Error ? error.message : "Failed to fetch users",
+          stack: error instanceof Error ? error.stack : undefined,
+          details: JSON.stringify(error),
         };
       }
     },
