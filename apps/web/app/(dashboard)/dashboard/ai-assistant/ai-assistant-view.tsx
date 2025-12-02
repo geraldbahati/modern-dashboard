@@ -336,22 +336,6 @@ export function AiAssistantView() {
                               ToolComponent &&
                               toolPart.state === "output-available"
                             ) {
-                              // Handle tool execution errors
-                              if (
-                                toolPart.output &&
-                                typeof toolPart.output === "object" &&
-                                "error" in toolPart.output &&
-                                toolPart.output.error
-                              ) {
-                                return (
-                                  <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-                                    <p className="font-medium">
-                                      Tool Error: {toolPart.output.error}
-                                    </p>
-                                  </div>
-                                );
-                              }
-
                               return (
                                 <ToolComponent
                                   tool={toolPart}

@@ -28,28 +28,38 @@ const listUsersSchema = paginationSchema.extend({
   page: z.number().int().min(1).default(1),
 });
 
-// List handler logic
-export const listHandler = async ({
-  input,
-}: {
-  input: z.infer<typeof listUsersSchema>;
-}) => {
-  const {
-    limit,
-    offset,
-    search,
-    username,
-    email,
-    firstName,
-    lastName,
-    fromDate,
-    toDate,
-    role,
-    status,
-    page,
-  } = input;
+// List all users with search and filters (protected - any logged in user can view)
+export const list = protectedProcedure
+  .input(listUsersSchema)
+  .output(
+    z.object({
+      users: z.array(userSchema),
+      pagination: z.object({
+        currentPage: z.number(),
+        totalPages: z.number(),
+        totalItems: z.number(),
+        itemsPerPage: z.number(),
+        startIndex: z.number(),
+        endIndex: z.number(),
+      }),
+    })
+  )
+  .handler(async ({ input }) => {
+    const {
+      limit,
+      offset,
+      search,
+      username,
+      email,
+      firstName,
+      lastName,
+      fromDate,
+      toDate,
+      role,
+      status,
+      page,
+    } = input;
 
-  try {
     // Build where conditions
     const conditions = [];
 
@@ -155,29 +165,7 @@ export const listHandler = async ({
         endIndex: Math.min(currentOffset + itemsPerPage, totalItems),
       },
     };
-  } catch (error) {
-    console.error("Error in listHandler:", error);
-    throw error;
-  }
-};
-
-// List all users with search and filters (protected - any logged in user can view)
-export const list = protectedProcedure
-  .input(listUsersSchema)
-  .output(
-    z.object({
-      users: z.array(userSchema),
-      pagination: z.object({
-        currentPage: z.number(),
-        totalPages: z.number(),
-        totalItems: z.number(),
-        itemsPerPage: z.number(),
-        startIndex: z.number(),
-        endIndex: z.number(),
-      }),
-    })
-  )
-  .handler(listHandler);
+  });
 
 // Get user metrics
 export const metrics = protectedProcedure
@@ -229,30 +217,24 @@ export const metrics = protectedProcedure
     };
   });
 
-export const getByIdHandler = async ({
-  input,
-}: {
-  input: z.infer<typeof idSchema>;
-}) => {
-  const [user] = await authDb
-    .select()
-    .from(schema.user)
-    .where(eq(schema.user.id, input.id));
-
-  if (!user) return null;
-
-  return {
-    ...user,
-    createdAt: user.createdAt,
-    updatedAt: user.updatedAt,
-  };
-};
-
 // Get user by ID
 export const getById = protectedProcedure
   .input(idSchema)
   .output(userSchema.nullable())
-  .handler(getByIdHandler);
+  .handler(async ({ input }) => {
+    const [user] = await authDb
+      .select()
+      .from(schema.user)
+      .where(eq(schema.user.id, input.id));
+
+    if (!user) return null;
+
+    return {
+      ...user,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
+  });
 
 // Get current user profile
 export const me = protectedProcedure
@@ -301,175 +283,141 @@ export const updateRole = adminProcedure
     };
   });
 
-// Create user input schema
-const createUserInputSchema = z.object({
-  name: z.string().min(1),
-  email: z.string().email(),
-  role: z.enum(["admin", "moderator", "editor", "user"]).default("user"),
-  image: z.string().url().optional(),
-});
-
-export const createUserHandler = async ({
-  input,
-}: {
-  input: z.infer<typeof createUserInputSchema>;
-}) => {
-  const [newUser] = await authDb
-    .insert(schema.user)
-    .values({
-      id: crypto.randomUUID(),
-      name: input.name,
-      email: input.email,
-      role: input.role,
-      image: input.image,
-      emailVerified: false,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    })
-    .returning();
-
-  if (!newUser) {
-    throw new Error("Failed to create user");
-  }
-
-  return {
-    ...newUser,
-    createdAt: newUser.createdAt,
-    updatedAt: newUser.updatedAt,
-  };
-};
-
 // Create user (admin only)
 export const createUser = adminProcedure
-  .input(createUserInputSchema)
+  .input(
+    z.object({
+      name: z.string().min(1),
+      email: z.string().email(),
+      role: z.enum(["admin", "moderator", "editor", "user"]).default("user"),
+      image: z.string().url().optional(),
+    })
+  )
   .output(userSchema)
-  .handler(createUserHandler);
+  .handler(async ({ input }) => {
+    const [newUser] = await authDb
+      .insert(schema.user)
+      .values({
+        id: crypto.randomUUID(),
+        name: input.name,
+        email: input.email,
+        role: input.role,
+        image: input.image,
+        emailVerified: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
 
-// Update user input schema
-const updateUserInputSchema = z.object({
-  userId: z.string(),
-  name: z.string().min(1).optional(),
-  email: z.string().email().optional(),
-  image: z.string().url().optional(),
-  role: z.enum(["admin", "moderator", "editor", "user"]).optional(),
-});
+    if (!newUser) {
+      throw new Error("Failed to create user");
+    }
 
-export const updateUserHandler = async ({
-  input,
-}: {
-  input: z.infer<typeof updateUserInputSchema>;
-}) => {
-  const { userId, ...updates } = input;
-
-  const [updated] = await authDb
-    .update(schema.user)
-    .set({ ...updates, updatedAt: new Date() })
-    .where(eq(schema.user.id, userId))
-    .returning();
-
-  if (!updated) {
-    throw new Error("User not found");
-  }
-
-  return {
-    ...updated,
-    createdAt: updated.createdAt,
-    updatedAt: updated.updatedAt,
-  };
-};
+    return {
+      ...newUser,
+      createdAt: newUser.createdAt,
+      updatedAt: newUser.updatedAt,
+    };
+  });
 
 // Update user (admin only)
 export const updateUser = adminProcedure
-  .input(updateUserInputSchema)
-  .output(userSchema)
-  .handler(updateUserHandler);
-
-// Ban user input schema
-const banUserInputSchema = z.object({
-  userId: z.string(),
-  reason: z.string(),
-  expiresAt: z.string().optional(),
-});
-
-export const banUserHandler = async ({
-  input,
-}: {
-  input: z.infer<typeof banUserInputSchema>;
-}) => {
-  await authDb
-    .update(schema.user)
-    .set({
-      banned: true,
-      banReason: input.reason,
-      updatedAt: new Date(),
+  .input(
+    z.object({
+      userId: z.string(),
+      name: z.string().min(1).optional(),
+      email: z.string().email().optional(),
+      image: z.string().url().optional(),
+      role: z.enum(["admin", "moderator", "editor", "user"]).optional(),
     })
-    .where(eq(schema.user.id, input.userId));
+  )
+  .output(userSchema)
+  .handler(async ({ input }) => {
+    const { userId, ...updates } = input;
 
-  return { success: true };
-};
+    const [updated] = await authDb
+      .update(schema.user)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(schema.user.id, userId))
+      .returning();
+
+    if (!updated) {
+      throw new Error("User not found");
+    }
+
+    return {
+      ...updated,
+      createdAt: updated.createdAt,
+      updatedAt: updated.updatedAt,
+    };
+  });
 
 // Ban user (admin only)
 export const banUser = adminProcedure
-  .input(banUserInputSchema)
-  .output(z.object({ success: z.boolean() }))
-  .handler(banUserHandler);
-
-export const unbanUserHandler = async ({
-  input,
-}: {
-  input: z.infer<typeof idSchema>;
-}) => {
-  await authDb
-    .update(schema.user)
-    .set({
-      banned: false,
-      banReason: null,
-      updatedAt: new Date(),
+  .input(
+    z.object({
+      userId: z.string(),
+      reason: z.string(),
+      expiresAt: z.string().optional(),
     })
-    .where(eq(schema.user.id, input.id));
+  )
+  .output(z.object({ success: z.boolean() }))
+  .handler(async ({ input }) => {
+    await authDb
+      .update(schema.user)
+      .set({
+        banned: true,
+        banReason: input.reason,
+        updatedAt: new Date(),
+      })
+      .where(eq(schema.user.id, input.userId));
 
-  return { success: true };
-};
+    return { success: true };
+  });
 
 // Unban user (admin only)
 export const unbanUser = adminProcedure
   .input(idSchema)
   .output(z.object({ success: z.boolean() }))
-  .handler(unbanUserHandler);
-
-// Delete user input schema
-const deleteUserInputSchema = z.object({
-  userId: z.string(),
-  permanent: z.boolean().default(false),
-});
-
-export const deleteUserHandler = async ({
-  input,
-}: {
-  input: z.infer<typeof deleteUserInputSchema>;
-}) => {
-  if (input.permanent) {
-    // Permanent delete
-    await authDb.delete(schema.user).where(eq(schema.user.id, input.userId));
-  } else {
-    // Soft delete (ban)
+  .handler(async ({ input }) => {
     await authDb
       .update(schema.user)
       .set({
-        banned: true,
-        banReason: "Soft deleted",
+        banned: false,
+        banReason: null,
         updatedAt: new Date(),
       })
-      .where(eq(schema.user.id, input.userId));
-  }
-  return { success: true };
-};
+      .where(eq(schema.user.id, input.id));
+
+    return { success: true };
+  });
 
 // Delete user (admin only)
 export const deleteUser = adminProcedure
-  .input(deleteUserInputSchema)
+  .input(
+    z.object({
+      userId: z.string(),
+      permanent: z.boolean().default(false),
+    })
+  )
   .output(z.object({ success: z.boolean() }))
-  .handler(deleteUserHandler);
+  .handler(async ({ input }) => {
+    if (input.permanent) {
+      // Permanent delete
+      await authDb.delete(schema.user).where(eq(schema.user.id, input.userId));
+    } else {
+      // Soft delete (ban)
+      await authDb
+        .update(schema.user)
+        .set({
+          banned: true,
+          banReason: "Soft deleted",
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.user.id, input.userId));
+    }
+    return { success: true };
+  });
 
 // Users router
 export const usersRouter = {
