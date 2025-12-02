@@ -11,6 +11,7 @@ import type { IncomingMessage } from "node:http";
 // Type for Cloudflare bindings
 type SecurityBindings = {
   ARCJET_KEY: string;
+  INTERNAL_API_KEY?: string;
 };
 
 /**
@@ -59,6 +60,23 @@ export const apiSecurityMiddleware = createMiddleware<{
   const key = c.env.ARCJET_KEY;
   if (!key) {
     console.warn("ARCJET_KEY not set - skipping security checks");
+    return await next();
+  }
+
+  // Bypass Arcjet for internal requests
+  const internalToken = c.req.header("x-internal-token");
+  const expectedToken =
+    c.env.INTERNAL_API_KEY ||
+    "e4539e9b6edb44aaf974adf22b62c0aa5c2e8af1b42e2a46ac71042e1bfc5165";
+
+  console.log("CF Security Debug:", {
+    received: internalToken ? internalToken.substring(0, 5) + "..." : "none",
+    expected: expectedToken ? expectedToken.substring(0, 5) + "..." : "none",
+    match: internalToken === expectedToken,
+    keyLength: expectedToken?.length,
+  });
+
+  if (internalToken === expectedToken) {
     return await next();
   }
 

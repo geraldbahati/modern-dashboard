@@ -8,9 +8,27 @@ import { z } from "zod";
 
 // VIEW/READ Operations
 export const listUsersSchema = z.object({
-  limit: z.number().min(1).max(100).default(20).describe("Number of users to return"),
+  limit: z
+    .number()
+    .min(1)
+    .max(100)
+    .default(20)
+    .describe("Number of users to return"),
   offset: z.number().min(0).default(0).describe("Number of users to skip"),
   search: z.string().optional().describe("Search by name or email"),
+  username: z.string().optional().describe("Filter by username"),
+  email: z.string().optional().describe("Filter by email"),
+  firstName: z.string().optional().describe("Filter by first name"),
+  lastName: z.string().optional().describe("Filter by last name"),
+  fromDate: z
+    .string()
+    .optional()
+    .describe("Filter by creation date from (ISO string)"),
+  toDate: z
+    .string()
+    .optional()
+    .describe("Filter by creation date to (ISO string)"),
+  page: z.number().int().min(1).default(1).describe("Page number"),
   role: z
     .enum(["admin", "moderator", "editor", "user"])
     .optional()
@@ -26,7 +44,10 @@ export const getUserByIdSchema = z.object({
 });
 
 export const getUserStatsSchema = z.object({
-  userId: z.string().optional().describe("Get stats for specific user, or current user if not provided"),
+  userId: z
+    .string()
+    .optional()
+    .describe("Get stats for specific user, or current user if not provided"),
 });
 
 // CREATE Operations
@@ -46,12 +67,17 @@ export const updateUserSchema = z.object({
   name: z.string().min(1).optional().describe("Update user's name"),
   email: z.string().email().optional().describe("Update user's email"),
   image: z.string().url().optional().describe("Update profile image"),
-  role: z.enum(["admin", "moderator", "editor", "user"]).optional().describe("Update user's role"),
+  role: z
+    .enum(["admin", "moderator", "editor", "user"])
+    .optional()
+    .describe("Update user's role"),
 });
 
 export const updateUserRoleSchema = z.object({
   userId: z.string().describe("The user ID"),
-  role: z.enum(["admin", "moderator", "editor", "user"]).describe("New role to assign"),
+  role: z
+    .enum(["admin", "moderator", "editor", "user"])
+    .describe("New role to assign"),
 });
 
 export const banUserSchema = z.object({

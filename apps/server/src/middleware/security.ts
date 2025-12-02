@@ -56,7 +56,6 @@ export const authSecurityMiddleware = createMiddleware<{
  */
 export const apiSecurityMiddleware = createMiddleware<{
   Variables: AuthVariables;
-  Bindings: { INTERNAL_API_KEY?: string };
 }>(async (c, next) => {
   if (!apiArcjet) {
     console.warn("ARCJET_KEY not set - security middleware disabled");
@@ -65,21 +64,7 @@ export const apiSecurityMiddleware = createMiddleware<{
 
   // Bypass Arcjet for internal requests
   const internalToken = c.req.header("x-internal-token");
-  const expectedToken =
-    c.env.INTERNAL_API_KEY ||
-    process.env.INTERNAL_API_KEY ||
-    "e4539e9b6edb44aaf974adf22b62c0aa5c2e8af1b42e2a46ac71042e1bfc5165";
-
-  console.log("Security Middleware Debug:", {
-    receivedToken: internalToken
-      ? internalToken.substring(0, 5) + "..."
-      : "none",
-    expectedToken: expectedToken
-      ? expectedToken.substring(0, 5) + "..."
-      : "none",
-    match: internalToken === expectedToken,
-  });
-
+  const expectedToken = process.env.INTERNAL_API_KEY || "your-secret-key";
   if (internalToken === expectedToken) {
     return next();
   }

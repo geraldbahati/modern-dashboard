@@ -48,15 +48,29 @@ export const chat = protectedProcedure
     const API_URL =
       process.env.API_URL ||
       process.env.NEXT_PUBLIC_API_URL ||
+      process.env.BETTER_AUTH_URL ||
       "http://localhost:3001";
-    const RPC_URL = `${API_URL}/api/rpc`;
+
+    // Remove trailing slash if present
+    const cleanApiUrl = API_URL.replace(/\/$/, "");
+    const RPC_URL = `${cleanApiUrl}/api/rpc`;
+
+    const token =
+      process.env.INTERNAL_API_KEY ||
+      "e4539e9b6edb44aaf974adf22b62c0aa5c2e8af1b42e2a46ac71042e1bfc5165";
+    console.log("AI Router Debug:", {
+      API_URL,
+      RPC_URL,
+      tokenPrefix: token.substring(0, 5) + "...",
+      hasProcessEnv: !!process.env.INTERNAL_API_KEY,
+    });
 
     const client = createClient({
       baseUrl: RPC_URL,
       headers: () => ({
         cookie,
         origin,
-        "x-internal-token": process.env.INTERNAL_API_KEY || "your-secret-key",
+        "x-internal-token": token,
       }),
     });
 

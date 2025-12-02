@@ -1,4 +1,5 @@
 import { tool } from "ai";
+import { UserService } from "../../services/users";
 import {
   listUsersSchema,
   getUserByIdSchema,
@@ -55,13 +56,21 @@ export const createTools = (client: Client) => ({
     inputSchema: listUsersSchema,
     execute: async (params) => {
       try {
-        const result = await client.users.list(params);
+        const result = await UserService.listUsers(params);
+
         return {
           success: true,
           data: result.users.map(serializeUser),
           count: result.pagination.totalItems,
         };
       } catch (error) {
+        console.error(
+          "Tool Execution Error (listUsers):",
+          JSON.stringify(error, null, 2)
+        );
+        if (error instanceof Error) {
+          console.error("Stack:", error.stack);
+        }
         return {
           success: false,
           error:
