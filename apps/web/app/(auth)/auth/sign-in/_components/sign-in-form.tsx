@@ -52,7 +52,7 @@ type SignInFormData = z.infer<typeof signInSchema>;
 export function SignInForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/";
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
   const [socialLoading, setSocialLoading] =
     useState<SupportedOAuthProvider | null>(null);
   const [isPasskeySupported, setIsPasskeySupported] = useState(false);
