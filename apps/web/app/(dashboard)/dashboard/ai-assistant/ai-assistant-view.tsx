@@ -58,7 +58,7 @@ import "./tools/task-tools"; // Register task tools
 import "./tools/quick-task-tools"; // Register quick task tools
 import "./tools/analytics-tools"; // Register analytics tools
 
-import { modelsList } from "@workspace/ai/lib/models-list";
+import { modelsList } from "@workspace/ai";
 
 const Spline = dynamic(() => import("@splinetool/react-spline"), {
   ssr: false,

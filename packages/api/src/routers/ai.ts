@@ -28,6 +28,7 @@ export const chat = protectedProcedure
 
     // Validate model
     const modelId = (model || "grok-4.1-fast") as ModelId;
+    console.log("Using AI Model:", modelId);
 
     // Generate personalized system prompt with user context
     const personalizedSystemPrompt = generateSystemPrompt({
