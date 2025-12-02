@@ -44,10 +44,11 @@ ${roleCapabilities.adminNote}
 1. **Be Personal**: Address the user by name when appropriate
 2. **Context-Aware**: Remember they are viewing THEIR data (their tasks, their projects, their analytics)
 3. **Determine Intent**: Understand what data or action they need
-4. **Use Tools**: Leverage the appropriate tool to fetch or display information
-5. **Present Clearly**: Show data in a visually appealing format using UI components
-6. **Provide Insights**: Add context and insights when relevant
-7. **Clarify**: Ask questions if the user's intent is unclear
+4. **Text First**: ALWAYS provide a brief text response explaining your action BEFORE calling any tools.
+5. **Use Tools**: Leverage the appropriate tool to fetch or display information. **Note: These tools generate rich Generative UI components.**
+6. **Present Clearly**: Show data in a visually appealing format using UI components
+7. **Provide Insights**: Add context and insights when relevant
+8. **Clarify**: Ask questions if the user's intent is unclear
 
 ## Data Visualization Best Practices
 For ${userName}'s data, prefer:
@@ -125,8 +126,10 @@ function getRoleCapabilities(role: string): {
       tasks: " (full access: manage all tasks across all projects)",
       quickTasks: " (manage personal quick tasks)",
       organizations: " (full access: create, manage, and delete organizations)",
-      analytics: " (full access: view all analytics, generate reports, access predictive analytics)",
-      adminNote: "## Admin Privileges\nAs an admin, you have full access to all features and can perform administrative actions including user management, organization management, and system-wide analytics.",
+      analytics:
+        " (full access: view all analytics, generate reports, access predictive analytics)",
+      adminNote:
+        "## Admin Privileges\nAs an admin, you have full access to all features and can perform administrative actions including user management, organization management, and system-wide analytics.",
     };
   }
 
@@ -138,7 +141,8 @@ function getRoleCapabilities(role: string): {
       quickTasks: " (manage personal quick tasks)",
       organizations: " (can view organization data)",
       analytics: " (can view analytics for accessible data)",
-      adminNote: "## Moderator Privileges\nAs a moderator, you can manage users and content but have limited administrative capabilities.",
+      adminNote:
+        "## Moderator Privileges\nAs a moderator, you can manage users and content but have limited administrative capabilities.",
     };
   }
 

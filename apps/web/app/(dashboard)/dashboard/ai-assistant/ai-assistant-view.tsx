@@ -77,7 +77,13 @@ export function AiAssistantView() {
   const isMobile = useIsMobile();
   const [text, setText] = useState<string>("");
   const [selectedModel, setSelectedModel] = useState<string>(modelsList[0].id);
+  const selectedModelRef = useRef(selectedModel);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Update ref when state changes
+  useEffect(() => {
+    selectedModelRef.current = selectedModel;
+  }, [selectedModel]);
 
   // Get user context from session
   const { userName } = useUserContext();
@@ -104,7 +110,7 @@ export function AiAssistantView() {
           await (client.ai.chat as any)(
             {
               messages: options.messages,
-              model: selectedModel,
+              model: selectedModelRef.current,
             },
             {
               signal: options.abortSignal,
