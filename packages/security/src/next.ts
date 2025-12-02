@@ -69,9 +69,11 @@ export const createApiArcjet = (key: string) => {
  * Create Next.js middleware with Arcjet protection
  * Use in middleware.ts
  */
-export const createArcjetMiddleware = (key: string) => {
+export const createArcjetMiddleware = (
+  key: string
+): ((req: Request, event: any) => Promise<Response | void>) => {
   const aj = createArcjet(key);
-  return createMiddleware(aj);
+  return createMiddleware(aj) as any;
 };
 
 // Re-export utilities

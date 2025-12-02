@@ -26,11 +26,10 @@ export const shieldConfig = {
 export const botConfig = {
   mode: getDefaultMode(),
   allow: [
-    "CATEGORY:SEARCH_ENGINE", // Google, Bing, etc.
-    "CATEGORY:MONITOR", // Uptime monitors
-    "CATEGORY:PREVIEW", // Link previews
-  ] as const,
-  deny: [] as const, // Block nothing explicitly, rely on allow list
+    "CATEGORY:SEARCH_ENGINE" as const, // Google, Bing, etc.
+    "CATEGORY:MONITOR" as const, // Uptime monitors
+    "CATEGORY:PREVIEW" as const, // Link previews
+  ],
 };
 
 /**
