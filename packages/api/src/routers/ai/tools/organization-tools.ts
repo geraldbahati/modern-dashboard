@@ -16,9 +16,9 @@ import {
   leaveOrganizationSchema,
   getMyOrganizationsSchema,
 } from "@workspace/ai/tools";
-import type { Client } from "../../../client.js";
+import { OrganizationService } from "../../../services/organizations";
 
-export const createOrganizationTools = (client: Client) => ({
+export const createOrganizationTools = (userId: string) => ({
   // LIST ORGANIZATIONS
   listOrganizations: tool({
     description:
@@ -26,7 +26,7 @@ export const createOrganizationTools = (client: Client) => ({
     inputSchema: listOrganizationsSchema,
     execute: async (params) => {
       try {
-        const result = await client.organizations.list(params);
+        const result = await OrganizationService.list(params);
         return {
           success: true,
           data: result.organizations,
@@ -51,8 +51,10 @@ export const createOrganizationTools = (client: Client) => ({
     inputSchema: getMyOrganizationsSchema,
     execute: async (params) => {
       try {
-        const organizations =
-          await client.organizations.getMyOrganizations(params);
+        const organizations = await OrganizationService.getMyOrganizations(
+          userId,
+          params.limit
+        );
         return {
           success: true,
           data: organizations,
@@ -76,9 +78,9 @@ export const createOrganizationTools = (client: Client) => ({
     inputSchema: getOrganizationByIdSchema,
     execute: async (params) => {
       try {
-        const organization = await client.organizations.getById({
-          id: params.organizationId,
-        });
+        const organization = await OrganizationService.getById(
+          params.organizationId
+        );
         return {
           success: true,
           data: organization,
@@ -102,7 +104,7 @@ export const createOrganizationTools = (client: Client) => ({
     inputSchema: getOrganizationBySlugSchema,
     execute: async (params) => {
       try {
-        const organization = await client.organizations.getBySlug(params);
+        const organization = await OrganizationService.getBySlug(params.slug);
         return {
           success: true,
           data: organization,
@@ -126,7 +128,7 @@ export const createOrganizationTools = (client: Client) => ({
     inputSchema: getOrganizationMembersSchema,
     execute: async (params) => {
       try {
-        const members = await client.organizations.getMembers(params);
+        const members = await OrganizationService.getMembers(params);
         return {
           success: true,
           data: members,
@@ -150,7 +152,10 @@ export const createOrganizationTools = (client: Client) => ({
     inputSchema: createOrganizationSchema,
     execute: async (params) => {
       try {
-        const organization = await client.organizations.create(params);
+        const organization = await OrganizationService.create({
+          ...params,
+          userId,
+        });
         return {
           success: true,
           data: organization,
@@ -175,7 +180,10 @@ export const createOrganizationTools = (client: Client) => ({
     inputSchema: updateOrganizationSchema,
     execute: async (params) => {
       try {
-        const organization = await client.organizations.update(params);
+        const organization = await OrganizationService.update({
+          ...params,
+          userId,
+        });
         return {
           success: true,
           data: organization,
@@ -200,7 +208,12 @@ export const createOrganizationTools = (client: Client) => ({
     inputSchema: addMemberSchema,
     execute: async (params) => {
       try {
-        const member = await client.organizations.addMember(params);
+        const member = await OrganizationService.addMember({
+          organizationId: params.organizationId,
+          targetUserId: params.userId,
+          role: params.role || "member",
+          userId,
+        });
         return {
           success: true,
           data: member,
@@ -223,7 +236,12 @@ export const createOrganizationTools = (client: Client) => ({
     inputSchema: updateMemberRoleSchema,
     execute: async (params) => {
       try {
-        const member = await client.organizations.updateMemberRole(params);
+        const member = await OrganizationService.updateMemberRole({
+          organizationId: params.organizationId,
+          targetUserId: params.userId,
+          role: params.role,
+          userId,
+        });
         return {
           success: true,
           data: member,
@@ -248,7 +266,11 @@ export const createOrganizationTools = (client: Client) => ({
     inputSchema: removeMemberSchema,
     execute: async (params) => {
       try {
-        await client.organizations.removeMember(params);
+        await OrganizationService.removeMember({
+          organizationId: params.organizationId,
+          targetUserId: params.userId,
+          userId,
+        });
         return {
           success: true,
           message: `User ${params.userId} has been removed from the organization`,
@@ -270,7 +292,12 @@ export const createOrganizationTools = (client: Client) => ({
     inputSchema: inviteMemberSchema,
     execute: async (params) => {
       try {
-        const invitation = await client.organizations.inviteMember(params);
+        const invitation = await OrganizationService.inviteMember({
+          organizationId: params.organizationId,
+          email: params.email,
+          role: params.role || "member",
+          userId,
+        });
         return {
           success: true,
           data: invitation,
@@ -295,7 +322,11 @@ export const createOrganizationTools = (client: Client) => ({
     inputSchema: listInvitationsSchema,
     execute: async (params) => {
       try {
-        const invitations = await client.organizations.listInvitations(params);
+        const invitations = await OrganizationService.listInvitations({
+          organizationId: params.organizationId,
+          status: params.status,
+          userId,
+        });
         return {
           success: true,
           data: invitations,
@@ -319,7 +350,10 @@ export const createOrganizationTools = (client: Client) => ({
     inputSchema: cancelInvitationSchema,
     execute: async (params) => {
       try {
-        await client.organizations.cancelInvitation(params);
+        await OrganizationService.cancelInvitation({
+          invitationId: params.invitationId,
+          userId,
+        });
         return {
           success: true,
           message: "Invitation cancelled successfully",
@@ -343,7 +377,10 @@ export const createOrganizationTools = (client: Client) => ({
     inputSchema: leaveOrganizationSchema,
     execute: async (params) => {
       try {
-        await client.organizations.leave(params);
+        await OrganizationService.leave({
+          organizationId: params.organizationId,
+          userId,
+        });
         return {
           success: true,
           message: "You have left the organization",
@@ -367,7 +404,10 @@ export const createOrganizationTools = (client: Client) => ({
     inputSchema: deleteOrganizationSchema,
     execute: async (params) => {
       try {
-        await client.organizations.delete(params);
+        await OrganizationService.delete({
+          organizationId: params.organizationId,
+          userId,
+        });
         return {
           success: true,
           message: `Organization ${params.organizationId} has been deleted`,

@@ -34,16 +34,16 @@ const serializeUser = (user: any) => {
 
 export const createTools = (client: Client, userId: string) => ({
   // Spread analytics tools (high priority)
-  ...createAnalyticsTools(client),
+  ...createAnalyticsTools(userId),
 
   // Spread organization tools
-  ...createOrganizationTools(client),
+  ...createOrganizationTools(userId),
 
   // Spread project tools
-  ...createProjectTools(client),
+  ...createProjectTools(userId),
 
   // Spread task tools
-  ...createTaskTools(client),
+  ...createTaskTools(userId),
 
   // Spread quick task tools
   ...createQuickTaskTools(userId),

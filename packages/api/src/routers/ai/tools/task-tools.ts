@@ -16,9 +16,9 @@ import {
   batchUpdateTasksSchema,
   batchDeleteTasksSchema,
 } from "@workspace/ai/tools";
-import type { Client } from "../../../client.js";
+import { TaskService } from "../../../services/tasks";
 
-export const createTaskTools = (client: Client) => ({
+export const createTaskTools = (userId: string) => ({
   // LIST TASKS
   listTasks: tool({
     description:
@@ -26,7 +26,10 @@ export const createTaskTools = (client: Client) => ({
     inputSchema: listTasksSchema,
     execute: async (params) => {
       try {
-        const result = await client.tasks.list(params);
+        const result = await TaskService.list({
+          userId,
+          ...params,
+        });
         return {
           success: true,
           data: result.data,
@@ -49,7 +52,7 @@ export const createTaskTools = (client: Client) => ({
     inputSchema: getTaskByIdSchema,
     execute: async (params) => {
       try {
-        const task = await client.tasks.getById({ id: params.taskId });
+        const task = await TaskService.getById(userId, params.taskId);
         return {
           success: true,
           data: task,
@@ -71,7 +74,10 @@ export const createTaskTools = (client: Client) => ({
     inputSchema: getMyTasksSchema,
     execute: async (params) => {
       try {
-        const tasks = await client.tasks.getMyTasks(params);
+        const tasks = await TaskService.getMyTasks({
+          userId,
+          ...params,
+        });
         return {
           success: true,
           data: tasks,
@@ -95,7 +101,10 @@ export const createTaskTools = (client: Client) => ({
     inputSchema: createTaskSchema,
     execute: async (params) => {
       try {
-        const task = await client.tasks.create(params);
+        const task = await TaskService.create({
+          userId,
+          ...params,
+        });
         return {
           success: true,
           data: task,
@@ -119,7 +128,8 @@ export const createTaskTools = (client: Client) => ({
     execute: async (params) => {
       try {
         const { taskId, ...updateData } = params;
-        const task = await client.tasks.update({
+        const task = await TaskService.update({
+          userId,
           id: taskId,
           ...updateData,
         });
@@ -146,7 +156,8 @@ export const createTaskTools = (client: Client) => ({
     execute: async (params) => {
       try {
         const { taskId, status } = params;
-        const task = await client.tasks.changeStatus({
+        const task = await TaskService.changeStatus({
+          userId,
           id: taskId,
           status,
         });
@@ -174,7 +185,8 @@ export const createTaskTools = (client: Client) => ({
     inputSchema: completeTaskSchema,
     execute: async (params) => {
       try {
-        const task = await client.tasks.changeStatus({
+        const task = await TaskService.changeStatus({
+          userId,
           id: params.taskId,
           status: "done",
         });
@@ -200,7 +212,8 @@ export const createTaskTools = (client: Client) => ({
     inputSchema: reopenTaskSchema,
     execute: async (params) => {
       try {
-        const task = await client.tasks.changeStatus({
+        const task = await TaskService.changeStatus({
+          userId,
           id: params.taskId,
           status: "todo",
         });
@@ -226,7 +239,8 @@ export const createTaskTools = (client: Client) => ({
     inputSchema: changeTaskPrioritySchema,
     execute: async (params) => {
       try {
-        const task = await client.tasks.update({
+        const task = await TaskService.update({
+          userId,
           id: params.taskId,
           priority: params.priority,
         });
@@ -254,7 +268,8 @@ export const createTaskTools = (client: Client) => ({
     execute: async (params) => {
       try {
         const { taskId, assigneeId } = params;
-        const task = await client.tasks.assign({
+        const task = await TaskService.assign({
+          userId,
           id: taskId,
           assigneeId,
         });
@@ -279,7 +294,10 @@ export const createTaskTools = (client: Client) => ({
     inputSchema: unassignTaskSchema,
     execute: async (params) => {
       try {
-        const task = await client.tasks.unassign({ id: params.taskId });
+        const task = await TaskService.unassign({
+          userId,
+          id: params.taskId,
+        });
         return {
           success: true,
           data: task,
@@ -302,7 +320,10 @@ export const createTaskTools = (client: Client) => ({
     inputSchema: deleteTaskSchema,
     execute: async (params) => {
       try {
-        await client.tasks.remove({ id: params.taskId });
+        await TaskService.remove({
+          userId,
+          id: params.taskId,
+        });
         return {
           success: true,
           message: `Task ${params.taskId} has been deleted`,
@@ -324,7 +345,10 @@ export const createTaskTools = (client: Client) => ({
     inputSchema: batchCreateTasksSchema,
     execute: async (params) => {
       try {
-        const result = await client.tasks.batchCreate(params);
+        const result = await TaskService.batchCreate({
+          userId,
+          tasks: params.tasks,
+        });
         return {
           success: result.success,
           created: result.created,
@@ -350,7 +374,10 @@ export const createTaskTools = (client: Client) => ({
     inputSchema: batchUpdateTasksSchema,
     execute: async (params) => {
       try {
-        const result = await client.tasks.batchUpdate(params);
+        const result = await TaskService.batchUpdate({
+          userId,
+          updates: params.updates,
+        });
         return {
           success: result.success,
           updated: result.updated,
@@ -376,7 +403,10 @@ export const createTaskTools = (client: Client) => ({
     inputSchema: batchDeleteTasksSchema,
     execute: async (params) => {
       try {
-        const result = await client.tasks.batchDelete(params);
+        const result = await TaskService.batchDelete({
+          userId,
+          taskIds: params.taskIds,
+        });
         return {
           success: result.success,
           deletedCount: result.deletedCount,

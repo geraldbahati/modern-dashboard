@@ -2,14 +2,11 @@
  * Organizations router - oRPC procedures for organization management
  */
 
-import { eq, ilike, or, and, sql } from "drizzle-orm";
 import { z } from "zod";
-import { authDb } from "@workspace/db/auth-db";
-import * as schema from "@workspace/db/auth-db/schema";
-import {
-  protectedProcedure,
-} from "../middleware/auth.js";
+import { ORPCError } from "@orpc/server";
+import { protectedProcedure } from "../middleware/auth.js";
 import { paginationSchema, idSchema } from "../schemas/index.js";
+import { OrganizationService } from "../services/organizations";
 
 // Enhanced list schema with search
 const listOrganizationsSchema = paginationSchema.extend({
@@ -33,12 +30,14 @@ const memberSchema = z.object({
   userId: z.string(),
   role: z.string(),
   createdAt: z.date(),
-  user: z.object({
-    id: z.string(),
-    name: z.string(),
-    email: z.string(),
-    image: z.string().nullable(),
-  }).optional(),
+  user: z
+    .object({
+      id: z.string(),
+      name: z.string(),
+      email: z.string(),
+      image: z.string().nullable(),
+    })
+    .optional(),
 });
 
 // Invitation schema
@@ -62,44 +61,7 @@ export const list = protectedProcedure
     })
   )
   .handler(async ({ input }) => {
-    const { limit, offset, search } = input;
-
-    // Build where conditions
-    const conditions = [];
-
-    // Search filter (name or slug)
-    if (search) {
-      conditions.push(
-        or(
-          ilike(schema.organization.name, `%${search}%`),
-          ilike(schema.organization.slug, `%${search}%`)
-        )
-      );
-    }
-
-    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-
-    // Execute query with pagination
-    const organizations = await authDb
-      .select()
-      .from(schema.organization)
-      .where(whereClause)
-      .limit(limit)
-      .offset(offset)
-      .orderBy(sql`${schema.organization.createdAt} DESC`);
-
-    // Get total count
-    const totalResult = await authDb
-      .select({ count: sql<number>`count(*)::int` })
-      .from(schema.organization)
-      .where(whereClause);
-
-    const total = totalResult[0]?.count ?? 0;
-
-    return {
-      organizations,
-      total,
-    };
+    return OrganizationService.list(input);
   });
 
 // Get organization by ID
@@ -107,12 +69,7 @@ export const getById = protectedProcedure
   .input(idSchema)
   .output(organizationSchema.nullable())
   .handler(async ({ input }) => {
-    const [org] = await authDb
-      .select()
-      .from(schema.organization)
-      .where(eq(schema.organization.id, input.id));
-
-    return org || null;
+    return OrganizationService.getById(input.id);
   });
 
 // Get organization by slug
@@ -120,12 +77,7 @@ export const getBySlug = protectedProcedure
   .input(z.object({ slug: z.string() }))
   .output(organizationSchema.nullable())
   .handler(async ({ input }) => {
-    const [org] = await authDb
-      .select()
-      .from(schema.organization)
-      .where(eq(schema.organization.slug, input.slug));
-
-    return org || null;
+    return OrganizationService.getBySlug(input.slug);
   });
 
 // Get my organizations (where I'm a member)
@@ -133,25 +85,7 @@ export const getMyOrganizations = protectedProcedure
   .input(z.object({ limit: z.number().min(1).max(100).default(20) }))
   .output(z.array(organizationSchema))
   .handler(async ({ context, input }) => {
-    const orgs = await authDb
-      .select({
-        id: schema.organization.id,
-        name: schema.organization.name,
-        slug: schema.organization.slug,
-        logo: schema.organization.logo,
-        createdAt: schema.organization.createdAt,
-        metadata: schema.organization.metadata,
-      })
-      .from(schema.organization)
-      .innerJoin(
-        schema.member,
-        eq(schema.member.organizationId, schema.organization.id)
-      )
-      .where(eq(schema.member.userId, context.user.id))
-      .limit(input.limit)
-      .orderBy(sql`${schema.organization.createdAt} DESC`);
-
-    return orgs;
+    return OrganizationService.getMyOrganizations(context.user.id, input.limit);
   });
 
 // Get organization members
@@ -165,33 +99,7 @@ export const getMembers = protectedProcedure
   )
   .output(z.array(memberSchema))
   .handler(async ({ input }) => {
-    const { organizationId, role, limit } = input;
-
-    const conditions = [eq(schema.member.organizationId, organizationId)];
-    if (role) {
-      conditions.push(eq(schema.member.role, role));
-    }
-
-    const members = await authDb
-      .select({
-        id: schema.member.id,
-        organizationId: schema.member.organizationId,
-        userId: schema.member.userId,
-        role: schema.member.role,
-        createdAt: schema.member.createdAt,
-        user: {
-          id: schema.user.id,
-          name: schema.user.name,
-          email: schema.user.email,
-          image: schema.user.image,
-        },
-      })
-      .from(schema.member)
-      .innerJoin(schema.user, eq(schema.user.id, schema.member.userId))
-      .where(and(...conditions))
-      .limit(limit);
-
-    return members;
+    return OrganizationService.getMembers(input);
   });
 
 // Create organization (protected - any user can create)
@@ -210,35 +118,16 @@ export const create = protectedProcedure
   )
   .output(organizationSchema)
   .handler(async ({ input, context }) => {
-    const orgId = crypto.randomUUID();
-
-    // Create organization
-    const [newOrg] = await authDb
-      .insert(schema.organization)
-      .values({
-        id: orgId,
-        name: input.name,
-        slug: input.slug,
-        logo: input.logo,
-        createdAt: new Date(),
-        metadata: input.metadata,
-      })
-      .returning();
-
-    if (!newOrg) {
-      throw new Error("Failed to create organization");
+    try {
+      return await OrganizationService.create({
+        ...input,
+        userId: context.user.id,
+      });
+    } catch (error) {
+      throw new ORPCError("INTERNAL_SERVER_ERROR", {
+        message: "Failed to create organization",
+      });
     }
-
-    // Add creator as owner
-    await authDb.insert(schema.member).values({
-      id: crypto.randomUUID(),
-      organizationId: orgId,
-      userId: context.user.id,
-      role: "owner",
-      createdAt: new Date(),
-    });
-
-    return newOrg;
   });
 
 // Update organization (admin/owner only)
@@ -259,34 +148,25 @@ export const update = protectedProcedure
   )
   .output(organizationSchema)
   .handler(async ({ input, context }) => {
-    const { organizationId, ...updates } = input;
-
-    // Check if user is owner or admin
-    const [membership] = await authDb
-      .select()
-      .from(schema.member)
-      .where(
-        and(
-          eq(schema.member.organizationId, organizationId),
-          eq(schema.member.userId, context.user.id)
-        )
-      );
-
-    if (!membership || !["owner", "admin"].includes(membership.role)) {
-      throw new Error("Unauthorized: Only owners and admins can update organization");
+    try {
+      return await OrganizationService.update({
+        ...input,
+        userId: context.user.id,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("Unauthorized")) {
+        throw new ORPCError("UNAUTHORIZED", { message: error.message });
+      }
+      if (
+        error instanceof Error &&
+        error.message === "Organization not found"
+      ) {
+        throw new ORPCError("NOT_FOUND", { message: "Organization not found" });
+      }
+      throw new ORPCError("INTERNAL_SERVER_ERROR", {
+        message: "Failed to update organization",
+      });
     }
-
-    const [updated] = await authDb
-      .update(schema.organization)
-      .set(updates)
-      .where(eq(schema.organization.id, organizationId))
-      .returning();
-
-    if (!updated) {
-      throw new Error("Organization not found");
-    }
-
-    return updated;
   });
 
 // Add member to organization (admin/owner only)
@@ -300,54 +180,21 @@ export const addMember = protectedProcedure
   )
   .output(memberSchema)
   .handler(async ({ input, context }) => {
-    // Check if current user is owner or admin
-    const [membership] = await authDb
-      .select()
-      .from(schema.member)
-      .where(
-        and(
-          eq(schema.member.organizationId, input.organizationId),
-          eq(schema.member.userId, context.user.id)
-        )
-      );
-
-    if (!membership || !["owner", "admin"].includes(membership.role)) {
-      throw new Error("Unauthorized: Only owners and admins can add members");
-    }
-
-    // Add new member
-    const [newMember] = await authDb
-      .insert(schema.member)
-      .values({
-        id: crypto.randomUUID(),
+    try {
+      return await OrganizationService.addMember({
         organizationId: input.organizationId,
-        userId: input.userId,
+        targetUserId: input.userId,
         role: input.role,
-        createdAt: new Date(),
-      })
-      .returning();
-
-    if (!newMember) {
-      throw new Error("Failed to add member");
+        userId: context.user.id,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("Unauthorized")) {
+        throw new ORPCError("UNAUTHORIZED", { message: error.message });
+      }
+      throw new ORPCError("INTERNAL_SERVER_ERROR", {
+        message: "Failed to add member",
+      });
     }
-
-    // Fetch user details
-    const [user] = await authDb
-      .select()
-      .from(schema.user)
-      .where(eq(schema.user.id, input.userId));
-
-    return {
-      ...newMember,
-      user: user
-        ? {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            image: user.image,
-          }
-        : undefined,
-    };
   });
 
 // Update member role (owner only)
@@ -361,53 +208,24 @@ export const updateMemberRole = protectedProcedure
   )
   .output(memberSchema)
   .handler(async ({ input, context }) => {
-    // Check if current user is owner
-    const [membership] = await authDb
-      .select()
-      .from(schema.member)
-      .where(
-        and(
-          eq(schema.member.organizationId, input.organizationId),
-          eq(schema.member.userId, context.user.id)
-        )
-      );
-
-    if (!membership || membership.role !== "owner") {
-      throw new Error("Unauthorized: Only owners can change member roles");
+    try {
+      return await OrganizationService.updateMemberRole({
+        organizationId: input.organizationId,
+        targetUserId: input.userId,
+        role: input.role,
+        userId: context.user.id,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("Unauthorized")) {
+        throw new ORPCError("UNAUTHORIZED", { message: error.message });
+      }
+      if (error instanceof Error && error.message === "Member not found") {
+        throw new ORPCError("NOT_FOUND", { message: "Member not found" });
+      }
+      throw new ORPCError("INTERNAL_SERVER_ERROR", {
+        message: "Failed to update member role",
+      });
     }
-
-    const [updated] = await authDb
-      .update(schema.member)
-      .set({ role: input.role })
-      .where(
-        and(
-          eq(schema.member.organizationId, input.organizationId),
-          eq(schema.member.userId, input.userId)
-        )
-      )
-      .returning();
-
-    if (!updated) {
-      throw new Error("Member not found");
-    }
-
-    // Fetch user details
-    const [user] = await authDb
-      .select()
-      .from(schema.user)
-      .where(eq(schema.user.id, input.userId));
-
-    return {
-      ...updated,
-      user: user
-        ? {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            image: user.image,
-          }
-        : undefined,
-    };
   });
 
 // Remove member from organization (admin/owner only)
@@ -420,31 +238,20 @@ export const removeMember = protectedProcedure
   )
   .output(z.object({ success: z.boolean() }))
   .handler(async ({ input, context }) => {
-    // Check if current user is owner or admin
-    const [membership] = await authDb
-      .select()
-      .from(schema.member)
-      .where(
-        and(
-          eq(schema.member.organizationId, input.organizationId),
-          eq(schema.member.userId, context.user.id)
-        )
-      );
-
-    if (!membership || !["owner", "admin"].includes(membership.role)) {
-      throw new Error("Unauthorized: Only owners and admins can remove members");
+    try {
+      return await OrganizationService.removeMember({
+        organizationId: input.organizationId,
+        targetUserId: input.userId,
+        userId: context.user.id,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("Unauthorized")) {
+        throw new ORPCError("UNAUTHORIZED", { message: error.message });
+      }
+      throw new ORPCError("INTERNAL_SERVER_ERROR", {
+        message: "Failed to remove member",
+      });
     }
-
-    await authDb
-      .delete(schema.member)
-      .where(
-        and(
-          eq(schema.member.organizationId, input.organizationId),
-          eq(schema.member.userId, input.userId)
-        )
-      );
-
-    return { success: true };
   });
 
 // Invite member to organization (admin/owner only)
@@ -458,40 +265,21 @@ export const inviteMember = protectedProcedure
   )
   .output(invitationSchema)
   .handler(async ({ input, context }) => {
-    // Check if current user is owner or admin
-    const [membership] = await authDb
-      .select()
-      .from(schema.member)
-      .where(
-        and(
-          eq(schema.member.organizationId, input.organizationId),
-          eq(schema.member.userId, context.user.id)
-        )
-      );
-
-    if (!membership || !["owner", "admin"].includes(membership.role)) {
-      throw new Error("Unauthorized: Only owners and admins can invite members");
-    }
-
-    // Create invitation (expires in 7 days)
-    const [invitation] = await authDb
-      .insert(schema.invitation)
-      .values({
-        id: crypto.randomUUID(),
+    try {
+      return await OrganizationService.inviteMember({
         organizationId: input.organizationId,
         email: input.email,
         role: input.role,
-        status: "pending",
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        inviterId: context.user.id,
-      })
-      .returning();
-
-    if (!invitation) {
-      throw new Error("Failed to create invitation");
+        userId: context.user.id,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("Unauthorized")) {
+        throw new ORPCError("UNAUTHORIZED", { message: error.message });
+      }
+      throw new ORPCError("INTERNAL_SERVER_ERROR", {
+        message: "Failed to invite member",
+      });
     }
-
-    return invitation;
   });
 
 // List invitations for an organization (admin/owner only)
@@ -504,32 +292,20 @@ export const listInvitations = protectedProcedure
   )
   .output(z.array(invitationSchema))
   .handler(async ({ input, context }) => {
-    // Check if current user is owner or admin
-    const [membership] = await authDb
-      .select()
-      .from(schema.member)
-      .where(
-        and(
-          eq(schema.member.organizationId, input.organizationId),
-          eq(schema.member.userId, context.user.id)
-        )
-      );
-
-    if (!membership || !["owner", "admin"].includes(membership.role)) {
-      throw new Error("Unauthorized: Only owners and admins can view invitations");
+    try {
+      return await OrganizationService.listInvitations({
+        organizationId: input.organizationId,
+        status: input.status,
+        userId: context.user.id,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("Unauthorized")) {
+        throw new ORPCError("UNAUTHORIZED", { message: error.message });
+      }
+      throw new ORPCError("INTERNAL_SERVER_ERROR", {
+        message: "Failed to list invitations",
+      });
     }
-
-    const conditions = [eq(schema.invitation.organizationId, input.organizationId)];
-    if (input.status) {
-      conditions.push(eq(schema.invitation.status, input.status));
-    }
-
-    const invitations = await authDb
-      .select()
-      .from(schema.invitation)
-      .where(and(...conditions));
-
-    return invitations;
   });
 
 // Cancel invitation (admin/owner only)
@@ -537,36 +313,22 @@ export const cancelInvitation = protectedProcedure
   .input(z.object({ invitationId: z.string() }))
   .output(z.object({ success: z.boolean() }))
   .handler(async ({ input, context }) => {
-    // Get invitation to check organization
-    const [invitation] = await authDb
-      .select()
-      .from(schema.invitation)
-      .where(eq(schema.invitation.id, input.invitationId));
-
-    if (!invitation) {
-      throw new Error("Invitation not found");
+    try {
+      return await OrganizationService.cancelInvitation({
+        invitationId: input.invitationId,
+        userId: context.user.id,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("Unauthorized")) {
+        throw new ORPCError("UNAUTHORIZED", { message: error.message });
+      }
+      if (error instanceof Error && error.message === "Invitation not found") {
+        throw new ORPCError("NOT_FOUND", { message: "Invitation not found" });
+      }
+      throw new ORPCError("INTERNAL_SERVER_ERROR", {
+        message: "Failed to cancel invitation",
+      });
     }
-
-    // Check if current user is owner or admin
-    const [membership] = await authDb
-      .select()
-      .from(schema.member)
-      .where(
-        and(
-          eq(schema.member.organizationId, invitation.organizationId),
-          eq(schema.member.userId, context.user.id)
-        )
-      );
-
-    if (!membership || !["owner", "admin"].includes(membership.role)) {
-      throw new Error("Unauthorized: Only owners and admins can cancel invitations");
-    }
-
-    await authDb
-      .delete(schema.invitation)
-      .where(eq(schema.invitation.id, input.invitationId));
-
-    return { success: true };
   });
 
 // Leave organization
@@ -574,36 +336,19 @@ export const leave = protectedProcedure
   .input(z.object({ organizationId: z.string() }))
   .output(z.object({ success: z.boolean() }))
   .handler(async ({ input, context }) => {
-    // Check if user is the only owner
-    const owners = await authDb
-      .select()
-      .from(schema.member)
-      .where(
-        and(
-          eq(schema.member.organizationId, input.organizationId),
-          eq(schema.member.role, "owner")
-        )
-      );
-
-    const isOnlyOwner =
-      owners.length === 1 && owners[0]?.userId === context.user.id;
-
-    if (isOnlyOwner) {
-      throw new Error(
-        "Cannot leave: You are the only owner. Transfer ownership or delete the organization."
-      );
+    try {
+      return await OrganizationService.leave({
+        organizationId: input.organizationId,
+        userId: context.user.id,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("Cannot leave")) {
+        throw new ORPCError("BAD_REQUEST", { message: error.message });
+      }
+      throw new ORPCError("INTERNAL_SERVER_ERROR", {
+        message: "Failed to leave organization",
+      });
     }
-
-    await authDb
-      .delete(schema.member)
-      .where(
-        and(
-          eq(schema.member.organizationId, input.organizationId),
-          eq(schema.member.userId, context.user.id)
-        )
-      );
-
-    return { success: true };
   });
 
 // Delete organization (owner only)
@@ -611,27 +356,19 @@ export const deleteOrganization = protectedProcedure
   .input(z.object({ organizationId: z.string() }))
   .output(z.object({ success: z.boolean() }))
   .handler(async ({ input, context }) => {
-    // Check if current user is owner
-    const [membership] = await authDb
-      .select()
-      .from(schema.member)
-      .where(
-        and(
-          eq(schema.member.organizationId, input.organizationId),
-          eq(schema.member.userId, context.user.id)
-        )
-      );
-
-    if (!membership || membership.role !== "owner") {
-      throw new Error("Unauthorized: Only owners can delete the organization");
+    try {
+      return await OrganizationService.delete({
+        organizationId: input.organizationId,
+        userId: context.user.id,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("Unauthorized")) {
+        throw new ORPCError("UNAUTHORIZED", { message: error.message });
+      }
+      throw new ORPCError("INTERNAL_SERVER_ERROR", {
+        message: "Failed to delete organization",
+      });
     }
-
-    // Delete organization (cascade will handle members and invitations)
-    await authDb
-      .delete(schema.organization)
-      .where(eq(schema.organization.id, input.organizationId));
-
-    return { success: true };
   });
 
 // Organizations router

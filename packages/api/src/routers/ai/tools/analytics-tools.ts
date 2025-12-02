@@ -1,17 +1,16 @@
 import { tool } from "ai";
 import {
   getDashboardOverviewSchema,
-  getUserAnalyticsSchema,
   getProjectAnalyticsSchema,
   getTaskDistributionSchema,
   getResourceAllocationSchema,
   getPredictiveAnalyticsSchema,
   getUserAnalyticsDetailedSchema,
 } from "@workspace/ai/tools";
-import type { Client } from "../../../client.js";
 import { z } from "zod";
+import { AnalyticsService } from "../../../services/analytics";
 
-export const createAnalyticsTools = (client: Client) => ({
+export const createAnalyticsTools = (userId: string) => ({
   // DASHBOARD OVERVIEW
   getDashboardOverview: tool({
     description:
@@ -19,7 +18,7 @@ export const createAnalyticsTools = (client: Client) => ({
     inputSchema: getDashboardOverviewSchema,
     execute: async (params) => {
       try {
-        const overview = await client.analytics.getDashboardOverview(params);
+        const overview = await AnalyticsService.getDashboardOverview(params);
         return {
           success: true,
           data: overview,
@@ -44,7 +43,7 @@ export const createAnalyticsTools = (client: Client) => ({
     inputSchema: z.object({}),
     execute: async () => {
       try {
-        const metrics = await client.metrics.getDashboardMetrics();
+        const metrics = await AnalyticsService.getDashboardMetrics();
         return {
           success: true,
           data: metrics,
@@ -69,7 +68,7 @@ export const createAnalyticsTools = (client: Client) => ({
     inputSchema: getProjectAnalyticsSchema,
     execute: async (params) => {
       try {
-        const analytics = await client.analytics.getProjectAnalytics(params);
+        const analytics = await AnalyticsService.getProjectAnalytics(params);
         return {
           success: true,
           data: analytics,
@@ -94,7 +93,7 @@ export const createAnalyticsTools = (client: Client) => ({
     inputSchema: getTaskDistributionSchema,
     execute: async (params) => {
       try {
-        const distribution = await client.analytics.getTaskDistribution(params);
+        const distribution = await AnalyticsService.getTaskDistribution(params);
         const total =
           distribution.todo + distribution.inProgress + distribution.done;
         return {
@@ -121,7 +120,7 @@ export const createAnalyticsTools = (client: Client) => ({
     inputSchema: z.object({}),
     execute: async () => {
       try {
-        const insights = await client.insights.getInsights();
+        const insights = await AnalyticsService.getInsights();
         return {
           success: true,
           data: insights,
@@ -144,7 +143,10 @@ export const createAnalyticsTools = (client: Client) => ({
     inputSchema: getResourceAllocationSchema,
     execute: async (params) => {
       try {
-        const allocation = await client.analytics.getResourceAllocation(params);
+        const allocation = await AnalyticsService.getResourceAllocation({
+          userId,
+          ...params,
+        });
         const overloaded = allocation.availability.filter(
           (m: { status: string }) => m.status === "overloaded"
         ).length;
@@ -175,7 +177,7 @@ export const createAnalyticsTools = (client: Client) => ({
     inputSchema: getPredictiveAnalyticsSchema,
     execute: async (params) => {
       try {
-        const analytics = await client.analytics.getPredictiveAnalytics(params);
+        const analytics = await AnalyticsService.getPredictiveAnalytics(params);
         const completionDate = new Date(
           analytics.summary.predictedCompletionDate
         ).toLocaleDateString();
@@ -209,8 +211,10 @@ export const createAnalyticsTools = (client: Client) => ({
     inputSchema: getUserAnalyticsDetailedSchema,
     execute: async (params) => {
       try {
-        const analytics =
-          await client.analytics.getUserAnalyticsDetailed(params);
+        const analytics = await AnalyticsService.getUserAnalyticsDetailed({
+          userId,
+          ...params,
+        });
         const recentActivity = analytics.activity
           .slice(-7)
           .reduce((sum: number, d: { tasks: number }) => sum + d.tasks, 0);

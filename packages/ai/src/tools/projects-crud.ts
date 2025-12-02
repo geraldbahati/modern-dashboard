@@ -8,7 +8,12 @@ import { z } from "zod";
 
 // VIEW/READ Operations
 export const listProjectsSchema = z.object({
-  limit: z.number().min(1).max(100).default(20).describe("Number of projects to return"),
+  limit: z
+    .number()
+    .min(1)
+    .max(100)
+    .default(20)
+    .describe("Number of projects to return"),
   offset: z.number().min(0).default(0).describe("Number of projects to skip"),
   search: z.string().optional().describe("Search by name or description"),
   status: z
@@ -16,7 +21,10 @@ export const listProjectsSchema = z.object({
     .optional()
     .describe("Filter by project status"),
   ownerId: z.string().optional().describe("Filter by owner user ID"),
-  isPublic: z.boolean().optional().describe("Filter by public/private projects"),
+  isPublic: z
+    .boolean()
+    .optional()
+    .describe("Filter by public/private projects"),
 });
 
 export const getProjectByIdSchema = z.object({
@@ -55,7 +63,10 @@ export const createProjectSchema = z.object({
     .enum(["active", "archived", "deleted"])
     .default("active")
     .describe("Initial project status"),
-  isPublic: z.boolean().default(false).describe("Whether the project is public"),
+  isPublic: z
+    .boolean()
+    .default(false)
+    .describe("Whether the project is public"),
 });
 
 // UPDATE Operations
@@ -71,7 +82,10 @@ export const updateProjectSchema = z.object({
     .optional()
     .describe("Update project slug"),
   imageUrl: z.string().url().optional().describe("Update project image URL"),
-  status: z.enum(["active", "archived", "deleted"]).optional().describe("Update project status"),
+  status: z
+    .enum(["active", "archived", "deleted"])
+    .optional()
+    .describe("Update project status"),
   isPublic: z.boolean().optional().describe("Update public/private status"),
 });
 
@@ -80,7 +94,10 @@ export const archiveProjectSchema = z.object({
 });
 
 export const restoreProjectSchema = z.object({
-  projectId: z.string().uuid().describe("The project ID to restore from archived/deleted"),
+  projectId: z
+    .string()
+    .uuid()
+    .describe("The project ID to restore from archived/deleted"),
 });
 
 // DELETE Operations
@@ -89,7 +106,9 @@ export const deleteProjectSchema = z.object({
   permanent: z
     .boolean()
     .default(false)
-    .describe("If true, permanently delete. If false, soft delete (mark as deleted)"),
+    .describe(
+      "If true, permanently delete. If false, soft delete (mark as deleted)"
+    ),
 });
 
 // Type exports

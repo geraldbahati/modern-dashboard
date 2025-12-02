@@ -3,15 +3,13 @@
  */
 
 import { z } from "zod";
-import { eq, and, desc, or, ilike, sql } from "drizzle-orm";
 import { ORPCError } from "@orpc/server";
-import { appDb } from "@workspace/db/app-db";
-import { tasks, projects } from "@workspace/db/app-db/schema";
 import {
   readSecurityProcedure,
   writeSecurityProcedure,
 } from "../middleware/security.js";
 import { paginationSchema } from "../schemas/index.js";
+import { TaskService } from "../services/tasks";
 
 // Task schema for output
 const taskSchema = z.object({
@@ -27,29 +25,6 @@ const taskSchema = z.object({
   createdAt: z.date(),
   updatedAt: z.date(),
 });
-
-type Task = z.infer<typeof taskSchema>;
-
-// Helper to cast database result to typed Task
-const toTask = (row: typeof tasks.$inferSelect): Task => ({
-  ...row,
-  status: row.status as Task["status"],
-});
-
-// Helper to verify project ownership
-async function verifyProjectOwnership(projectId: string, userId: string) {
-  const [project] = await appDb
-    .select()
-    .from(projects)
-    .where(and(eq(projects.id, projectId), eq(projects.ownerId, userId)));
-
-  if (!project) {
-    throw new ORPCError("NOT_FOUND", {
-      message: "Project not found or access denied",
-    });
-  }
-  return project;
-}
 
 /**
  * List all tasks with optional filters
@@ -73,96 +48,10 @@ export const list = readSecurityProcedure
     })
   )
   .handler(async ({ input, context }) => {
-    const {
-      limit,
-      offset,
-      projectId,
-      assigneeId,
-      status,
-      priority,
-      search,
-      overdue,
-    } = input;
-
-    // Build where conditions
-    const conditions = [];
-
-    // Filter by project if specified
-    if (projectId) {
-      // Verify project ownership
-      await verifyProjectOwnership(projectId, context.user.id);
-      conditions.push(eq(tasks.projectId, projectId));
-    } else {
-      // If no projectId, only show tasks from user's projects
-      const userProjects = await appDb
-        .select({ id: projects.id })
-        .from(projects)
-        .where(eq(projects.ownerId, context.user.id));
-
-      const projectIds = userProjects.map((p) => p.id);
-      if (projectIds.length > 0) {
-        conditions.push(sql`${tasks.projectId} IN ${projectIds}`);
-      } else {
-        // No projects, return empty
-        return { data: [], total: 0 };
-      }
-    }
-
-    // Filter by assignee
-    if (assigneeId) {
-      conditions.push(eq(tasks.assigneeId, assigneeId));
-    }
-
-    // Filter by status
-    if (status) {
-      conditions.push(eq(tasks.status, status));
-    }
-
-    // Filter by priority
-    if (priority) {
-      conditions.push(eq(tasks.priority, parseInt(priority)));
-    }
-
-    // Search filter
-    if (search) {
-      conditions.push(
-        or(
-          ilike(tasks.title, `%${search}%`),
-          ilike(tasks.description, `%${search}%`)
-        )
-      );
-    }
-
-    // Filter overdue tasks
-    if (overdue) {
-      conditions.push(
-        and(sql`${tasks.dueDate} < NOW()`, sql`${tasks.status} != 'done'`)
-      );
-    }
-
-    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-
-    // Execute query with pagination
-    const rows = await appDb
-      .select()
-      .from(tasks)
-      .where(whereClause)
-      .orderBy(desc(tasks.createdAt))
-      .limit(limit)
-      .offset(offset);
-
-    // Get total count
-    const countResult = await appDb
-      .select({ count: sql<number>`count(*)::int` })
-      .from(tasks)
-      .where(whereClause);
-
-    const total = countResult[0]?.count ?? 0;
-
-    return {
-      data: rows.map(toTask),
-      total,
-    };
+    return TaskService.list({
+      userId: context.user.id,
+      ...input,
+    });
   });
 
 /**
@@ -173,21 +62,18 @@ export const getById = readSecurityProcedure
   .input(z.object({ id: z.string().uuid() }))
   .output(taskSchema)
   .handler(async ({ input, context }) => {
-    const [task] = await appDb
-      .select()
-      .from(tasks)
-      .where(eq(tasks.id, input.id));
-
-    if (!task) {
-      throw new ORPCError("NOT_FOUND", {
-        message: "Task not found",
+    try {
+      return await TaskService.getById(context.user.id, input.id);
+    } catch (error) {
+      if (error instanceof Error && error.message === "Task not found") {
+        throw new ORPCError("NOT_FOUND", {
+          message: "Task not found",
+        });
+      }
+      throw new ORPCError("INTERNAL_SERVER_ERROR", {
+        message: "Failed to fetch task",
       });
     }
-
-    // Verify project ownership
-    await verifyProjectOwnership(task.projectId, context.user.id);
-
-    return toTask(task);
   });
 
 /**
@@ -203,20 +89,10 @@ export const getMyTasks = readSecurityProcedure
   )
   .output(z.array(taskSchema))
   .handler(async ({ input, context }) => {
-    const conditions = [eq(tasks.assigneeId, context.user.id)];
-
-    if (input.status) {
-      conditions.push(eq(tasks.status, input.status));
-    }
-
-    const rows = await appDb
-      .select()
-      .from(tasks)
-      .where(and(...conditions))
-      .orderBy(desc(tasks.createdAt))
-      .limit(input.limit);
-
-    return rows.map(toTask);
+    return TaskService.getMyTasks({
+      userId: context.user.id,
+      ...input,
+    });
   });
 
 /**
@@ -237,29 +113,16 @@ export const create = writeSecurityProcedure
   )
   .output(taskSchema)
   .handler(async ({ input, context }) => {
-    // Verify project ownership
-    await verifyProjectOwnership(input.projectId, context.user.id);
-
-    const [task] = await appDb
-      .insert(tasks)
-      .values({
-        title: input.title,
-        description: input.description,
-        projectId: input.projectId,
-        assigneeId: input.assigneeId,
-        status: input.status,
-        priority: parseInt(input.priority),
-        dueDate: input.dueDate ? new Date(input.dueDate) : null,
-      })
-      .returning();
-
-    if (!task) {
+    try {
+      return await TaskService.create({
+        userId: context.user.id,
+        ...input,
+      });
+    } catch (error) {
       throw new ORPCError("INTERNAL_SERVER_ERROR", {
         message: "Failed to create task",
       });
     }
-
-    return toTask(task);
   });
 
 /**
@@ -280,47 +143,21 @@ export const update = writeSecurityProcedure
   )
   .output(taskSchema)
   .handler(async ({ input, context }) => {
-    const { id, ...updates } = input;
-
-    // Get existing task
-    const [existing] = await appDb.select().from(tasks).where(eq(tasks.id, id));
-
-    if (!existing) {
-      throw new ORPCError("NOT_FOUND", {
-        message: "Task not found",
+    try {
+      return await TaskService.update({
+        userId: context.user.id,
+        ...input,
       });
-    }
-
-    // Verify project ownership
-    await verifyProjectOwnership(existing.projectId, context.user.id);
-
-    // Prepare update data
-    const updateData: any = { ...updates };
-    if (updates.priority) {
-      updateData.priority = parseInt(updates.priority);
-    }
-    if (updates.dueDate) {
-      updateData.dueDate = new Date(updates.dueDate);
-    }
-    if (updates.status === "done" && existing.status !== "done") {
-      updateData.completedAt = new Date();
-    } else if (updates.status !== "done" && existing.status === "done") {
-      updateData.completedAt = null;
-    }
-
-    const [updated] = await appDb
-      .update(tasks)
-      .set(updateData)
-      .where(eq(tasks.id, id))
-      .returning();
-
-    if (!updated) {
+    } catch (error) {
+      if (error instanceof Error && error.message === "Task not found") {
+        throw new ORPCError("NOT_FOUND", {
+          message: "Task not found",
+        });
+      }
       throw new ORPCError("INTERNAL_SERVER_ERROR", {
         message: "Failed to update task",
       });
     }
-
-    return toTask(updated);
   });
 
 /**
@@ -336,39 +173,21 @@ export const changeStatus = writeSecurityProcedure
   )
   .output(taskSchema)
   .handler(async ({ input, context }) => {
-    const [existing] = await appDb
-      .select()
-      .from(tasks)
-      .where(eq(tasks.id, input.id));
-
-    if (!existing) {
-      throw new ORPCError("NOT_FOUND", {
-        message: "Task not found",
+    try {
+      return await TaskService.changeStatus({
+        userId: context.user.id,
+        ...input,
       });
-    }
-
-    await verifyProjectOwnership(existing.projectId, context.user.id);
-
-    const updateData: any = { status: input.status };
-    if (input.status === "done" && existing.status !== "done") {
-      updateData.completedAt = new Date();
-    } else if (input.status !== "done" && existing.status === "done") {
-      updateData.completedAt = null;
-    }
-
-    const [updated] = await appDb
-      .update(tasks)
-      .set(updateData)
-      .where(eq(tasks.id, input.id))
-      .returning();
-
-    if (!updated) {
+    } catch (error) {
+      if (error instanceof Error && error.message === "Task not found") {
+        throw new ORPCError("NOT_FOUND", {
+          message: "Task not found",
+        });
+      }
       throw new ORPCError("INTERNAL_SERVER_ERROR", {
         message: "Failed to update task status",
       });
     }
-
-    return toTask(updated);
   });
 
 /**
@@ -384,32 +203,21 @@ export const assign = writeSecurityProcedure
   )
   .output(taskSchema)
   .handler(async ({ input, context }) => {
-    const [existing] = await appDb
-      .select()
-      .from(tasks)
-      .where(eq(tasks.id, input.id));
-
-    if (!existing) {
-      throw new ORPCError("NOT_FOUND", {
-        message: "Task not found",
+    try {
+      return await TaskService.assign({
+        userId: context.user.id,
+        ...input,
       });
-    }
-
-    await verifyProjectOwnership(existing.projectId, context.user.id);
-
-    const [updated] = await appDb
-      .update(tasks)
-      .set({ assigneeId: input.assigneeId })
-      .where(eq(tasks.id, input.id))
-      .returning();
-
-    if (!updated) {
+    } catch (error) {
+      if (error instanceof Error && error.message === "Task not found") {
+        throw new ORPCError("NOT_FOUND", {
+          message: "Task not found",
+        });
+      }
       throw new ORPCError("INTERNAL_SERVER_ERROR", {
         message: "Failed to assign task",
       });
     }
-
-    return toTask(updated);
   });
 
 /**
@@ -420,32 +228,21 @@ export const unassign = writeSecurityProcedure
   .input(z.object({ id: z.string().uuid() }))
   .output(taskSchema)
   .handler(async ({ input, context }) => {
-    const [existing] = await appDb
-      .select()
-      .from(tasks)
-      .where(eq(tasks.id, input.id));
-
-    if (!existing) {
-      throw new ORPCError("NOT_FOUND", {
-        message: "Task not found",
+    try {
+      return await TaskService.unassign({
+        userId: context.user.id,
+        ...input,
       });
-    }
-
-    await verifyProjectOwnership(existing.projectId, context.user.id);
-
-    const [updated] = await appDb
-      .update(tasks)
-      .set({ assigneeId: null })
-      .where(eq(tasks.id, input.id))
-      .returning();
-
-    if (!updated) {
+    } catch (error) {
+      if (error instanceof Error && error.message === "Task not found") {
+        throw new ORPCError("NOT_FOUND", {
+          message: "Task not found",
+        });
+      }
       throw new ORPCError("INTERNAL_SERVER_ERROR", {
         message: "Failed to unassign task",
       });
     }
-
-    return toTask(updated);
   });
 
 /**
@@ -456,22 +253,21 @@ export const remove = writeSecurityProcedure
   .input(z.object({ id: z.string().uuid() }))
   .output(z.object({ success: z.boolean() }))
   .handler(async ({ input, context }) => {
-    const [existing] = await appDb
-      .select()
-      .from(tasks)
-      .where(eq(tasks.id, input.id));
-
-    if (!existing) {
-      throw new ORPCError("NOT_FOUND", {
-        message: "Task not found",
+    try {
+      return await TaskService.remove({
+        userId: context.user.id,
+        ...input,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message === "Task not found") {
+        throw new ORPCError("NOT_FOUND", {
+          message: "Task not found",
+        });
+      }
+      throw new ORPCError("INTERNAL_SERVER_ERROR", {
+        message: "Failed to delete task",
       });
     }
-
-    await verifyProjectOwnership(existing.projectId, context.user.id);
-
-    await appDb.delete(tasks).where(eq(tasks.id, input.id));
-
-    return { success: true };
   });
 
 /**
@@ -510,49 +306,10 @@ export const batchCreate = writeSecurityProcedure
     })
   )
   .handler(async ({ input, context }) => {
-    const created: z.infer<typeof taskSchema>[] = [];
-    const failed: { index: number; error: string }[] = [];
-
-    for (let i = 0; i < input.tasks.length; i++) {
-      const task = input.tasks[i];
-      if (!task) continue;
-
-      try {
-        // Verify project ownership
-        await verifyProjectOwnership(task.projectId, context.user.id);
-
-        const insertData: any = {
-          title: task.title,
-          description: task.description || null,
-          projectId: task.projectId,
-          assigneeId: task.assigneeId || null,
-          status: task.status || "todo",
-          priority: parseInt(task.priority || "0"),
-          dueDate: task.dueDate ? new Date(task.dueDate) : null,
-        };
-
-        const [newTask] = await appDb
-          .insert(tasks)
-          .values(insertData)
-          .returning();
-
-        if (newTask) {
-          created.push(toTask(newTask));
-        }
-      } catch (error) {
-        failed.push({
-          index: i,
-          error:
-            error instanceof Error ? error.message : "Failed to create task",
-        });
-      }
-    }
-
-    return {
-      success: failed.length === 0,
-      created,
-      failed,
-    };
+    return TaskService.batchCreate({
+      userId: context.user.id,
+      tasks: input.tasks,
+    });
   });
 
 /**
@@ -591,63 +348,10 @@ export const batchUpdate = writeSecurityProcedure
     })
   )
   .handler(async ({ input, context }) => {
-    const updated: z.infer<typeof taskSchema>[] = [];
-    const failed: { taskId: string; error: string }[] = [];
-
-    for (const update of input.updates) {
-      try {
-        const { taskId, ...updates } = update;
-
-        // Get existing task
-        const [existing] = await appDb
-          .select()
-          .from(tasks)
-          .where(eq(tasks.id, taskId));
-
-        if (!existing) {
-          throw new Error("Task not found");
-        }
-
-        // Verify project ownership
-        await verifyProjectOwnership(existing.projectId, context.user.id);
-
-        // Prepare update data
-        const updateData: any = { ...updates };
-        if (updates.priority) {
-          updateData.priority = parseInt(updates.priority);
-        }
-        if (updates.dueDate) {
-          updateData.dueDate = new Date(updates.dueDate);
-        }
-        if (updates.status === "done" && existing.status !== "done") {
-          updateData.completedAt = new Date();
-        } else if (updates.status !== "done" && existing.status === "done") {
-          updateData.completedAt = null;
-        }
-
-        const [updatedTask] = await appDb
-          .update(tasks)
-          .set(updateData)
-          .where(eq(tasks.id, taskId))
-          .returning();
-
-        if (updatedTask) {
-          updated.push(toTask(updatedTask));
-        }
-      } catch (error) {
-        failed.push({
-          taskId: update.taskId,
-          error:
-            error instanceof Error ? error.message : "Failed to update task",
-        });
-      }
-    }
-
-    return {
-      success: failed.length === 0,
-      updated,
-      failed,
-    };
+    return TaskService.batchUpdate({
+      userId: context.user.id,
+      updates: input.updates,
+    });
   });
 
 /**
@@ -673,38 +377,10 @@ export const batchDelete = writeSecurityProcedure
     })
   )
   .handler(async ({ input, context }) => {
-    const failed: { taskId: string; error: string }[] = [];
-    let deletedCount = 0;
-
-    for (const taskId of input.taskIds) {
-      try {
-        const [existing] = await appDb
-          .select()
-          .from(tasks)
-          .where(eq(tasks.id, taskId));
-
-        if (!existing) {
-          throw new Error("Task not found");
-        }
-
-        await verifyProjectOwnership(existing.projectId, context.user.id);
-
-        await appDb.delete(tasks).where(eq(tasks.id, taskId));
-        deletedCount++;
-      } catch (error) {
-        failed.push({
-          taskId,
-          error:
-            error instanceof Error ? error.message : "Failed to delete task",
-        });
-      }
-    }
-
-    return {
-      success: failed.length === 0,
-      deletedCount,
-      failed,
-    };
+    return TaskService.batchDelete({
+      userId: context.user.id,
+      taskIds: input.taskIds,
+    });
   });
 
 // Export router

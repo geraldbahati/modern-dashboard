@@ -9,9 +9,9 @@ import {
   restoreProjectSchema,
   deleteProjectSchema,
 } from "@workspace/ai/tools";
-import type { Client } from "../../../client.js";
+import { ProjectService } from "../../../services/projects";
 
-export const createProjectTools = (client: Client) => ({
+export const createProjectTools = (userId: string) => ({
   // LIST PROJECTS
   listProjects: tool({
     description:
@@ -19,9 +19,12 @@ export const createProjectTools = (client: Client) => ({
     inputSchema: listProjectsSchema,
     execute: async (params) => {
       try {
-        const result = await client.projects.list({
+        const result = await ProjectService.list({
+          userId,
           limit: params.limit,
           offset: params.offset,
+          search: params.search,
+          status: params.status,
         });
         return {
           success: true,
@@ -45,9 +48,10 @@ export const createProjectTools = (client: Client) => ({
     inputSchema: getProjectByIdSchema,
     execute: async (params) => {
       try {
-        const project = await client.projects.getById({
-          id: params.projectId,
-        });
+        const project = await ProjectService.getById(userId, params.projectId);
+        if (!project) {
+          throw new Error("Project not found");
+        }
         return {
           success: true,
           data: project,
@@ -69,7 +73,10 @@ export const createProjectTools = (client: Client) => ({
     inputSchema: getProjectBySlugSchema,
     execute: async (params) => {
       try {
-        const project = await client.projects.getBySlug(params);
+        const project = await ProjectService.getBySlug(userId, params.slug);
+        if (!project) {
+          throw new Error("Project not found");
+        }
         return {
           success: true,
           data: project,
@@ -91,7 +98,10 @@ export const createProjectTools = (client: Client) => ({
     inputSchema: createProjectSchema,
     execute: async (params) => {
       try {
-        const project = await client.projects.create(params);
+        const project = await ProjectService.create({
+          ...params,
+          userId,
+        });
         return {
           success: true,
           data: project,
@@ -115,10 +125,7 @@ export const createProjectTools = (client: Client) => ({
     execute: async (params) => {
       try {
         const { projectId, ...data } = params;
-        const project = await client.projects.update({
-          id: projectId,
-          data,
-        });
+        const project = await ProjectService.update(userId, projectId, data);
         return {
           success: true,
           data: project,
@@ -141,7 +148,7 @@ export const createProjectTools = (client: Client) => ({
     inputSchema: archiveProjectSchema,
     execute: async (params) => {
       try {
-        const project = await client.projects.archive({ id: params.projectId });
+        const project = await ProjectService.archive(userId, params.projectId);
         return {
           success: true,
           data: project,
@@ -166,7 +173,7 @@ export const createProjectTools = (client: Client) => ({
     inputSchema: restoreProjectSchema,
     execute: async (params) => {
       try {
-        const project = await client.projects.restore({ id: params.projectId });
+        const project = await ProjectService.restore(userId, params.projectId);
         return {
           success: true,
           data: project,
@@ -192,9 +199,9 @@ export const createProjectTools = (client: Client) => ({
     execute: async (params) => {
       try {
         if (params.permanent) {
-          await client.projects.hardDelete({ id: params.projectId });
+          await ProjectService.hardDelete(userId, params.projectId);
         } else {
-          await client.projects.remove({ id: params.projectId });
+          await ProjectService.remove(userId, params.projectId);
         }
         const deleteType = params.permanent
           ? "permanently deleted"

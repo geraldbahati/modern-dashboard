@@ -3,10 +3,7 @@
  */
 
 import { z } from "zod";
-import { eq, and, desc, or, ilike, sql, type SQL } from "drizzle-orm";
 import { ORPCError } from "@orpc/server";
-import { appDb } from "@workspace/db/app-db";
-import { projects } from "@workspace/db/app-db/schema";
 import {
   readSecurityProcedure,
   writeSecurityProcedure,
@@ -17,20 +14,13 @@ import {
   projectSchema,
   createProjectSchema,
   updateProjectSchema,
-  type Project,
 } from "../schemas/index.js";
-
-// Helper to cast database result to typed Project
-const toProject = (row: typeof projects.$inferSelect): Project => ({
-  ...row,
-  status: row.status as Project["status"],
-});
+import { ProjectService } from "../services/projects";
 
 // Enhanced list schema with filters
 const listProjectsSchema = paginationSchema.extend({
   search: z.string().optional(),
   status: z.enum(["active", "archived", "deleted"]).optional(),
-  environment: z.enum(["production", "staging", "development"]).optional(),
 });
 
 /**
@@ -46,47 +36,13 @@ export const list = readSecurityProcedure
     })
   )
   .handler(async ({ input, context }) => {
-    const { limit, offset, search, status, environment } = input;
-
-    const conditions = [eq(projects.ownerId, context.user.id)];
-
-    if (search) {
-      conditions.push(
-        or(
-          ilike(projects.name, `%${search}%`),
-          ilike(projects.description || "", `%${search}%`)
-        )!
-      );
-    }
-
-    if (status) {
-      conditions.push(eq(projects.status, status));
-    }
-
-    // Note: Environment is not in the schema provided earlier.
-    // If it's required, we should add it to the schema or ignore it for now.
-    // I will ignore it for now as it wasn't in the schema view I saw.
-
-    const whereClause = and(...conditions) as unknown as SQL<unknown>;
-
-    const rows = await appDb
-      .select()
-      .from(projects)
-      .where(whereClause!)
-      .orderBy(desc(projects.createdAt))
-      .limit(limit)
-      .offset(offset);
-
-    // Get total count
-    const countResult = await appDb
-      .select({ count: sql<number>`count(*)::int` })
-      .from(projects)
-      .where(whereClause!);
-
-    return {
-      data: rows.map(toProject),
-      total: countResult[0]?.count ?? 0,
-    };
+    return ProjectService.list({
+      userId: context.user.id,
+      limit: input.limit,
+      offset: input.offset,
+      search: input.search,
+      status: input.status,
+    });
   });
 
 /**
@@ -103,38 +59,7 @@ export const metrics = readSecurityProcedure
     })
   )
   .handler(async ({ context }) => {
-    const userId = context.user.id;
-
-    const totalResult = await appDb
-      .select({ count: sql<number>`count(*)::int` })
-      .from(projects)
-      .where(eq(projects.ownerId, userId));
-
-    const activeResult = await appDb
-      .select({ count: sql<number>`count(*)::int` })
-      .from(projects)
-      .where(and(eq(projects.ownerId, userId), eq(projects.status, "active"))!);
-
-    const archivedResult = await appDb
-      .select({ count: sql<number>`count(*)::int` })
-      .from(projects)
-      .where(
-        and(eq(projects.ownerId, userId), eq(projects.status, "archived"))!
-      );
-
-    const deletedResult = await appDb
-      .select({ count: sql<number>`count(*)::int` })
-      .from(projects)
-      .where(
-        and(eq(projects.ownerId, userId), eq(projects.status, "deleted"))!
-      );
-
-    return {
-      total: totalResult[0]?.count ?? 0,
-      active: activeResult[0]?.count ?? 0,
-      archived: archivedResult[0]?.count ?? 0,
-      deleted: deletedResult[0]?.count ?? 0,
-    };
+    return ProjectService.metrics(context.user.id);
   });
 /**
  * Get a single project by ID
@@ -144,12 +69,7 @@ export const getById = readSecurityProcedure
   .input(z.object({ id: z.string().uuid() }))
   .output(projectSchema)
   .handler(async ({ input, context }) => {
-    const [project] = await appDb
-      .select()
-      .from(projects)
-      .where(
-        and(eq(projects.id, input.id), eq(projects.ownerId, context.user.id))
-      );
+    const project = await ProjectService.getById(context.user.id, input.id);
 
     if (!project) {
       throw new ORPCError("NOT_FOUND", {
@@ -157,7 +77,7 @@ export const getById = readSecurityProcedure
       });
     }
 
-    return toProject(project);
+    return project;
   });
 
 /**
@@ -168,15 +88,7 @@ export const getBySlug = readSecurityProcedure
   .input(z.object({ slug: z.string() }))
   .output(projectSchema)
   .handler(async ({ input, context }) => {
-    const [project] = await appDb
-      .select()
-      .from(projects)
-      .where(
-        and(
-          eq(projects.slug, input.slug),
-          eq(projects.ownerId, context.user.id)
-        )
-      );
+    const project = await ProjectService.getBySlug(context.user.id, input.slug);
 
     if (!project) {
       throw new ORPCError("NOT_FOUND", {
@@ -184,7 +96,7 @@ export const getBySlug = readSecurityProcedure
       });
     }
 
-    return toProject(project);
+    return project;
   });
 
 /**
@@ -195,38 +107,24 @@ export const create = writeSecurityProcedure
   .input(createProjectSchema)
   .output(projectSchema)
   .handler(async ({ input, context }) => {
-    // Check if slug already exists for this user
-    const [existing] = await appDb
-      .select()
-      .from(projects)
-      .where(
-        and(
-          eq(projects.slug, input.slug),
-          eq(projects.ownerId, context.user.id)
-        )
-      );
-
-    if (existing) {
-      throw new ORPCError("CONFLICT", {
-        message: "A project with this slug already exists",
-      });
-    }
-
-    const [project] = await appDb
-      .insert(projects)
-      .values({
+    try {
+      return await ProjectService.create({
         ...input,
-        ownerId: context.user.id,
-      })
-      .returning();
-
-    if (!project) {
+        userId: context.user.id,
+      });
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message === "A project with this slug already exists"
+      ) {
+        throw new ORPCError("CONFLICT", {
+          message: "A project with this slug already exists",
+        });
+      }
       throw new ORPCError("INTERNAL_SERVER_ERROR", {
         message: "Failed to create project",
       });
     }
-
-    return toProject(project);
   });
 
 /**
@@ -242,33 +140,16 @@ export const update = writeSecurityProcedure
   )
   .output(projectSchema)
   .handler(async ({ input, context }) => {
-    // Verify ownership
-    const [existing] = await appDb
-      .select()
-      .from(projects)
-      .where(
-        and(eq(projects.id, input.id), eq(projects.ownerId, context.user.id))
-      );
-
-    if (!existing) {
-      throw new ORPCError("NOT_FOUND", {
-        message: "Project not found",
-      });
-    }
-
-    const [updated] = await appDb
-      .update(projects)
-      .set(input.data)
-      .where(eq(projects.id, input.id))
-      .returning();
-
-    if (!updated) {
+    try {
+      return await ProjectService.update(context.user.id, input.id, input.data);
+    } catch (error) {
+      if (error instanceof Error && error.message === "Project not found") {
+        throw new ORPCError("NOT_FOUND", { message: "Project not found" });
+      }
       throw new ORPCError("INTERNAL_SERVER_ERROR", {
         message: "Failed to update project",
       });
     }
-
-    return toProject(updated);
   });
 
 /**
@@ -279,27 +160,16 @@ export const remove = writeSecurityProcedure
   .input(z.object({ id: z.string().uuid() }))
   .output(z.object({ success: z.boolean() }))
   .handler(async ({ input, context }) => {
-    // Verify ownership
-    const [existing] = await appDb
-      .select()
-      .from(projects)
-      .where(
-        and(eq(projects.id, input.id), eq(projects.ownerId, context.user.id))
-      );
-
-    if (!existing) {
-      throw new ORPCError("NOT_FOUND", {
-        message: "Project not found",
+    try {
+      return await ProjectService.remove(context.user.id, input.id);
+    } catch (error) {
+      if (error instanceof Error && error.message === "Project not found") {
+        throw new ORPCError("NOT_FOUND", { message: "Project not found" });
+      }
+      throw new ORPCError("INTERNAL_SERVER_ERROR", {
+        message: "Failed to delete project",
       });
     }
-
-    // Soft delete
-    await appDb
-      .update(projects)
-      .set({ status: "deleted" })
-      .where(eq(projects.id, input.id));
-
-    return { success: true };
   });
 
 /**
@@ -310,23 +180,16 @@ export const hardDelete = heavyWriteSecurityProcedure
   .input(z.object({ id: z.string().uuid() }))
   .output(z.object({ success: z.boolean() }))
   .handler(async ({ input, context }) => {
-    // Verify ownership
-    const [existing] = await appDb
-      .select()
-      .from(projects)
-      .where(
-        and(eq(projects.id, input.id), eq(projects.ownerId, context.user.id))
-      );
-
-    if (!existing) {
-      throw new ORPCError("NOT_FOUND", {
-        message: "Project not found",
+    try {
+      return await ProjectService.hardDelete(context.user.id, input.id);
+    } catch (error) {
+      if (error instanceof Error && error.message === "Project not found") {
+        throw new ORPCError("NOT_FOUND", { message: "Project not found" });
+      }
+      throw new ORPCError("INTERNAL_SERVER_ERROR", {
+        message: "Failed to delete project",
       });
     }
-
-    await appDb.delete(projects).where(eq(projects.id, input.id));
-
-    return { success: true };
   });
 
 /**
@@ -337,33 +200,16 @@ export const archive = writeSecurityProcedure
   .input(z.object({ id: z.string().uuid() }))
   .output(projectSchema)
   .handler(async ({ input, context }) => {
-    // Verify ownership
-    const [existing] = await appDb
-      .select()
-      .from(projects)
-      .where(
-        and(eq(projects.id, input.id), eq(projects.ownerId, context.user.id))
-      );
-
-    if (!existing) {
-      throw new ORPCError("NOT_FOUND", {
-        message: "Project not found",
-      });
-    }
-
-    const [updated] = await appDb
-      .update(projects)
-      .set({ status: "archived" })
-      .where(eq(projects.id, input.id))
-      .returning();
-
-    if (!updated) {
+    try {
+      return await ProjectService.archive(context.user.id, input.id);
+    } catch (error) {
+      if (error instanceof Error && error.message === "Project not found") {
+        throw new ORPCError("NOT_FOUND", { message: "Project not found" });
+      }
       throw new ORPCError("INTERNAL_SERVER_ERROR", {
         message: "Failed to archive project",
       });
     }
-
-    return toProject(updated);
   });
 
 /**
@@ -374,33 +220,16 @@ export const restore = writeSecurityProcedure
   .input(z.object({ id: z.string().uuid() }))
   .output(projectSchema)
   .handler(async ({ input, context }) => {
-    // Verify ownership
-    const [existing] = await appDb
-      .select()
-      .from(projects)
-      .where(
-        and(eq(projects.id, input.id), eq(projects.ownerId, context.user.id))
-      );
-
-    if (!existing) {
-      throw new ORPCError("NOT_FOUND", {
-        message: "Project not found",
-      });
-    }
-
-    const [updated] = await appDb
-      .update(projects)
-      .set({ status: "active" })
-      .where(eq(projects.id, input.id))
-      .returning();
-
-    if (!updated) {
+    try {
+      return await ProjectService.restore(context.user.id, input.id);
+    } catch (error) {
+      if (error instanceof Error && error.message === "Project not found") {
+        throw new ORPCError("NOT_FOUND", { message: "Project not found" });
+      }
       throw new ORPCError("INTERNAL_SERVER_ERROR", {
         message: "Failed to restore project",
       });
     }
-
-    return toProject(updated);
   });
 
 // Export router
