@@ -9,8 +9,17 @@ import { z } from "zod";
 
 // VIEW/READ Operations
 export const listQuickTasksSchema = z.object({
-  limit: z.number().min(1).max(100).default(20).describe("Number of quick tasks to return"),
-  offset: z.number().min(0).default(0).describe("Number of quick tasks to skip"),
+  limit: z
+    .number()
+    .min(1)
+    .max(100)
+    .default(20)
+    .describe("Number of quick tasks to return"),
+  offset: z
+    .number()
+    .min(0)
+    .default(0)
+    .describe("Number of quick tasks to skip"),
   completed: z.boolean().optional().describe("Filter by completion status"),
 });
 
@@ -32,15 +41,15 @@ export const updateQuickTaskSchema = z.object({
 });
 
 export const toggleQuickTaskSchema = z.object({
-  quickTaskId: z.string().uuid().describe("The quick task ID to toggle completion"),
+  quickTaskId: z.uuid().describe("The quick task ID to toggle completion"),
 });
 
 export const completeQuickTaskSchema = z.object({
-  quickTaskId: z.string().uuid().describe("The quick task ID to mark as complete"),
+  quickTaskId: z.uuid().describe("The quick task ID to mark as complete"),
 });
 
 export const uncompleteQuickTaskSchema = z.object({
-  quickTaskId: z.string().uuid().describe("The quick task ID to mark as incomplete"),
+  quickTaskId: z.uuid().describe("The quick task ID to mark as incomplete"),
 });
 
 // DELETE Operations
@@ -49,20 +58,34 @@ export const deleteQuickTaskSchema = z.object({
 });
 
 export const deleteCompletedQuickTasksSchema = z.object({
-  confirm: z.boolean().describe("Must be true to confirm deletion of all completed tasks"),
+  confirm: z
+    .boolean()
+    .describe("Must be true to confirm deletion of all completed tasks"),
 });
 
 // BATCH Operations
 export const batchCreateQuickTasksSchema = z.object({
-  tasks: z.array(createQuickTaskSchema).min(1).max(50).describe("Array of quick tasks to create (max 50)"),
+  tasks: z
+    .array(createQuickTaskSchema)
+    .min(1)
+    .max(10)
+    .describe("Array of quick tasks to create (max 10)"),
 });
 
 export const batchUpdateQuickTasksSchema = z.object({
-  updates: z.array(updateQuickTaskSchema).min(1).max(50).describe("Array of quick task updates (max 50)"),
+  updates: z
+    .array(updateQuickTaskSchema)
+    .min(1)
+    .max(10)
+    .describe("Array of quick task updates (max 10)"),
 });
 
 export const batchDeleteQuickTasksSchema = z.object({
-  quickTaskIds: z.array(z.string().uuid()).min(1).max(50).describe("Array of quick task IDs to delete (max 50)"),
+  quickTaskIds: z
+    .array(z.string().uuid())
+    .min(1)
+    .max(10)
+    .describe("Array of quick task IDs to delete (max 10)"),
 });
 
 // Type exports
@@ -72,12 +95,22 @@ export type CreateQuickTaskInput = z.infer<typeof createQuickTaskSchema>;
 export type UpdateQuickTaskInput = z.infer<typeof updateQuickTaskSchema>;
 export type ToggleQuickTaskInput = z.infer<typeof toggleQuickTaskSchema>;
 export type CompleteQuickTaskInput = z.infer<typeof completeQuickTaskSchema>;
-export type UncompleteQuickTaskInput = z.infer<typeof uncompleteQuickTaskSchema>;
+export type UncompleteQuickTaskInput = z.infer<
+  typeof uncompleteQuickTaskSchema
+>;
 export type DeleteQuickTaskInput = z.infer<typeof deleteQuickTaskSchema>;
-export type DeleteCompletedQuickTasksInput = z.infer<typeof deleteCompletedQuickTasksSchema>;
-export type BatchCreateQuickTasksInput = z.infer<typeof batchCreateQuickTasksSchema>;
-export type BatchUpdateQuickTasksInput = z.infer<typeof batchUpdateQuickTasksSchema>;
-export type BatchDeleteQuickTasksInput = z.infer<typeof batchDeleteQuickTasksSchema>;
+export type DeleteCompletedQuickTasksInput = z.infer<
+  typeof deleteCompletedQuickTasksSchema
+>;
+export type BatchCreateQuickTasksInput = z.infer<
+  typeof batchCreateQuickTasksSchema
+>;
+export type BatchUpdateQuickTasksInput = z.infer<
+  typeof batchUpdateQuickTasksSchema
+>;
+export type BatchDeleteQuickTasksInput = z.infer<
+  typeof batchDeleteQuickTasksSchema
+>;
 
 /**
  * Quick task data types returned by tools

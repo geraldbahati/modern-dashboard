@@ -4,7 +4,13 @@
 
 import { z } from "zod";
 import { protectedProcedure } from "../middleware/auth.js";
-import { streamText, convertToModelMessages, stepCountIs } from "ai";
+import {
+  streamText,
+  convertToModelMessages,
+  stepCountIs,
+  generateObject,
+  NoSuchToolError,
+} from "ai";
 import { getModel, type ModelId, generateSystemPrompt } from "@workspace/ai";
 import { streamToEventIterator } from "@orpc/server";
 import { createTools } from "./ai/tools.js";
@@ -107,6 +113,33 @@ export const chat = protectedProcedure
         console.log("Stream finished:", { text, finishReason, usage });
       },
       tools: createTools(client, user.id),
+      experimental_repairToolCall: async ({
+        toolCall,
+        tools,
+        inputSchema,
+        error,
+      }) => {
+        if (NoSuchToolError.isInstance(error)) {
+          return null; // do not attempt to fix invalid tool names
+        }
+
+        const tool = tools[toolCall.toolName as keyof typeof tools];
+
+        const { object: repairedArgs } = await generateObject({
+          model: getModel(modelId),
+          schema: tool.inputSchema,
+          prompt: [
+            `The model tried to call the tool "${toolCall.toolName}"` +
+              ` with the following inputs:`,
+            JSON.stringify(toolCall.input),
+            `The tool accepts the following schema:`,
+            JSON.stringify(inputSchema(toolCall)),
+            "Please fix the inputs.",
+          ].join("\n"),
+        });
+
+        return { ...toolCall, input: JSON.stringify(repairedArgs) };
+      },
     });
 
     // Convert to event iterator for streaming over oRPC

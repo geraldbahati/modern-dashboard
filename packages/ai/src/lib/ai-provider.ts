@@ -14,34 +14,19 @@ const openrouter = createOpenRouter({
  */
 export const models = {
   // OpenAI models
-  "gpt-4o": "openai/gpt-4o",
   "gpt-4o-mini": "openai/gpt-4o-mini",
-  "gpt-4-turbo": "openai/gpt-4-turbo",
-
-  // Anthropic models
-  "claude-opus-4": "anthropic/claude-opus-4",
-  "claude-sonnet-4": "anthropic/claude-sonnet-4-20250514",
-  "claude-sonnet-3.5": "anthropic/claude-3.5-sonnet",
-
-  // Meta Llama models
-  "llama-3.3-70b": "meta-llama/llama-3.3-70b-instruct",
-  "llama-3.1-405b": "meta-llama/llama-3.1-405b-instruct",
-
-  // Google models
-  "gemini-2.0-flash": "google/gemini-2.0-flash-exp:free",
-  "gemini-pro-1.5": "google/gemini-pro-1.5",
-
-  // Mistral models
-  "mistral-large": "mistralai/mistral-large",
-
-  // DeepSeek models
-  "deepseek-chat": "deepseek/deepseek-chat",
-  "deepseek-r1": "deepseek/deepseek-r1",
 
   // xAI models
-  "grok-beta": "x-ai/grok-beta",
-  "grok-2-vision-1212": "x-ai/grok-2-vision-1212",
   "grok-4.1-fast": "x-ai/grok-4.1-fast:free",
+
+  // Google models
+  "gemini-2.5-flash-lite": "google/gemini-2.5-flash-lite",
+
+  // Qwen models
+  "qwen3-next-80b": "qwen/qwen3-next-80b-a3b-instruct",
+
+  // DeepSeek models
+  "deepseek-chat-v3": "deepseek/deepseek-chat-v3-0324",
 } as const;
 
 export type ModelId = keyof typeof models;
