@@ -28,7 +28,7 @@ export function UserMenu() {
     setIsSigningOut(true);
     try {
       await signOut();
-      router.push("/auth/login");
+      router.push("/auth/sign-in");
     } catch (error) {
       console.error("Sign out failed:", error);
       setIsSigningOut(false);
@@ -44,7 +44,7 @@ export function UserMenu() {
   if (!session?.user) {
     return (
       <Link
-        href="/auth/login"
+        href="/auth/sign-in"
         className="flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium hover:bg-accent/50 transition-colors"
       >
         Sign in
@@ -97,13 +97,19 @@ export function UserMenu() {
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild className="cursor-pointer">
-          <Link href="/dashboard/profile" className="flex items-center gap-2 w-full">
+          <Link
+            href="/dashboard/profile"
+            className="flex items-center gap-2 w-full"
+          >
             <User className="size-4" />
             <span>Profile</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild className="cursor-pointer">
-          <Link href="/dashboard/settings" className="flex items-center gap-2 w-full">
+          <Link
+            href="/dashboard/settings"
+            className="flex items-center gap-2 w-full"
+          >
             <Settings className="size-4" />
             <span>Settings</span>
           </Link>

@@ -42,6 +42,10 @@ export default async function proxy(req: NextRequest, event: NextFetchEvent) {
           return NextResponse.redirect(url);
         }
       }
+
+      // User is not logged in or session check failed, redirect to sign-in
+      url.pathname = "/auth/sign-in";
+      return NextResponse.redirect(url);
     }
   } catch (error) {
     console.error("Proxy auth check failed:", error);
