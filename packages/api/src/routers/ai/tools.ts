@@ -32,7 +32,7 @@ const serializeUser = (user: any) => {
   };
 };
 
-export const createTools = (client: Client) => ({
+export const createTools = (client: Client, userId: string) => ({
   // Spread analytics tools (high priority)
   ...createAnalyticsTools(client),
 
@@ -46,7 +46,7 @@ export const createTools = (client: Client) => ({
   ...createTaskTools(client),
 
   // Spread quick task tools
-  ...createQuickTaskTools(client),
+  ...createQuickTaskTools(userId),
 
   // User tools below
   // LIST USERS
@@ -88,11 +88,11 @@ export const createTools = (client: Client) => ({
     inputSchema: getUserByIdSchema,
     execute: async (params) => {
       try {
-        const user = await client.users.getById({ id: params.userId });
-        return {
-          success: true,
-          data: serializeUser(user),
-        };
+        const user = await UserService.getUserById(params.userId);
+        if (!user) {
+          return { success: false, error: "User not found" };
+        }
+        return { success: true, data: serializeUser(user) };
       } catch (error) {
         return {
           success: false,
@@ -105,17 +105,12 @@ export const createTools = (client: Client) => ({
 
   // CREATE USER
   createUser: tool({
-    description:
-      "Create a new user with the specified details. Requires name and email at minimum.",
+    description: "Create a new user with specified details.",
     inputSchema: createUserSchema,
     execute: async (params) => {
       try {
-        const user = await client.users.create(params);
-        return {
-          success: true,
-          data: serializeUser(user),
-          message: "User created successfully",
-        };
+        const user = await UserService.createUser(params);
+        return { success: true, data: serializeUser(user) };
       } catch (error) {
         return {
           success: false,
@@ -128,17 +123,12 @@ export const createTools = (client: Client) => ({
 
   // UPDATE USER
   updateUser: tool({
-    description:
-      "Update an existing user's information. Only provided fields will be updated.",
+    description: "Update an existing user's details.",
     inputSchema: updateUserSchema,
     execute: async (params) => {
       try {
-        const user = await client.users.update(params);
-        return {
-          success: true,
-          data: serializeUser(user),
-          message: "User updated successfully",
-        };
+        const user = await UserService.updateUser(params);
+        return { success: true, data: serializeUser(user) };
       } catch (error) {
         return {
           success: false,
@@ -151,16 +141,12 @@ export const createTools = (client: Client) => ({
 
   // BAN USER
   banUser: tool({
-    description:
-      "Ban a user from the platform. Requires userId and reason. Optionally set an expiration date.",
+    description: "Ban a user from the platform.",
     inputSchema: banUserSchema,
     execute: async (params) => {
       try {
-        await client.users.ban(params);
-        return {
-          success: true,
-          message: `User ${params.userId} has been banned`,
-        };
+        const result = await UserService.banUser(params);
+        return { success: true, data: result };
       } catch (error) {
         return {
           success: false,
@@ -172,15 +158,12 @@ export const createTools = (client: Client) => ({
 
   // UNBAN USER
   unbanUser: tool({
-    description: "Remove a ban from a user, restoring their access.",
+    description: "Unban a previously banned user.",
     inputSchema: unbanUserSchema,
     execute: async (params) => {
       try {
-        await client.users.unban({ id: params.userId });
-        return {
-          success: true,
-          message: `User ${params.userId} has been unbanned`,
-        };
+        const result = await UserService.unbanUser(params.userId);
+        return { success: true, data: result };
       } catch (error) {
         return {
           success: false,
@@ -193,19 +176,12 @@ export const createTools = (client: Client) => ({
 
   // DELETE USER
   deleteUser: tool({
-    description:
-      "Delete a user from the system. Can be a soft delete (ban) or permanent deletion.",
+    description: "Permanently or soft delete a user.",
     inputSchema: deleteUserSchema,
     execute: async (params) => {
       try {
-        await client.users.delete(params);
-        const deleteType = params.permanent
-          ? "permanently deleted"
-          : "soft deleted";
-        return {
-          success: true,
-          message: `User ${params.userId} has been ${deleteType}`,
-        };
+        const result = await UserService.deleteUser(params);
+        return { success: true, data: result };
       } catch (error) {
         return {
           success: false,

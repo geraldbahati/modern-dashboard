@@ -13,9 +13,9 @@ import {
   batchUpdateQuickTasksSchema,
   batchDeleteQuickTasksSchema,
 } from "@workspace/ai/tools";
-import type { Client } from "../../../client.js";
+import { QuickTaskService } from "../../../services/quick-tasks";
 
-export const createQuickTaskTools = (client: Client) => ({
+export const createQuickTaskTools = (userId: string) => ({
   // LIST QUICK TASKS
   listQuickTasks: tool({
     description:
@@ -23,7 +23,7 @@ export const createQuickTaskTools = (client: Client) => ({
     inputSchema: listQuickTasksSchema,
     execute: async (params) => {
       try {
-        const tasks = await client.quickTasks.list();
+        const tasks = await QuickTaskService.list(userId);
 
         // Filter by completion if specified
         let filteredTasks = tasks;
@@ -60,9 +60,13 @@ export const createQuickTaskTools = (client: Client) => ({
     inputSchema: getQuickTaskByIdSchema,
     execute: async (params) => {
       try {
-        const task = await client.quickTasks.getById({
-          id: params.quickTaskId,
-        });
+        const task = await QuickTaskService.getById(userId, params.quickTaskId);
+        if (!task) {
+          return {
+            success: false,
+            error: "Quick task not found",
+          };
+        }
         return {
           success: true,
           data: task,
@@ -86,7 +90,7 @@ export const createQuickTaskTools = (client: Client) => ({
     inputSchema: createQuickTaskSchema,
     execute: async (params) => {
       try {
-        const task = await client.quickTasks.create({ text: params.text });
+        const task = await QuickTaskService.create(userId, params.text);
         return {
           success: true,
           data: task,
@@ -112,10 +116,7 @@ export const createQuickTaskTools = (client: Client) => ({
     execute: async (params) => {
       try {
         const { quickTaskId, ...data } = params;
-        const task = await client.quickTasks.update({
-          id: quickTaskId,
-          data,
-        });
+        const task = await QuickTaskService.update(userId, quickTaskId, data);
         return {
           success: true,
           data: task,
@@ -140,7 +141,7 @@ export const createQuickTaskTools = (client: Client) => ({
     inputSchema: toggleQuickTaskSchema,
     execute: async (params) => {
       try {
-        const task = await client.quickTasks.toggle({ id: params.quickTaskId });
+        const task = await QuickTaskService.toggle(userId, params.quickTaskId);
         return {
           success: true,
           data: task,
@@ -164,9 +165,8 @@ export const createQuickTaskTools = (client: Client) => ({
     inputSchema: completeQuickTaskSchema,
     execute: async (params) => {
       try {
-        const task = await client.quickTasks.update({
-          id: params.quickTaskId,
-          data: { completed: true },
+        const task = await QuickTaskService.update(userId, params.quickTaskId, {
+          completed: true,
         });
         return {
           success: true,
@@ -191,9 +191,8 @@ export const createQuickTaskTools = (client: Client) => ({
     inputSchema: uncompleteQuickTaskSchema,
     execute: async (params) => {
       try {
-        const task = await client.quickTasks.update({
-          id: params.quickTaskId,
-          data: { completed: false },
+        const task = await QuickTaskService.update(userId, params.quickTaskId, {
+          completed: false,
         });
         return {
           success: true,
@@ -219,7 +218,7 @@ export const createQuickTaskTools = (client: Client) => ({
     inputSchema: deleteQuickTaskSchema,
     execute: async (params) => {
       try {
-        await client.quickTasks.remove({ id: params.quickTaskId });
+        await QuickTaskService.delete(userId, params.quickTaskId);
         return {
           success: true,
           message: `Quick task ${params.quickTaskId} has been deleted`,
@@ -243,9 +242,10 @@ export const createQuickTaskTools = (client: Client) => ({
     inputSchema: deleteCompletedQuickTasksSchema,
     execute: async (params) => {
       try {
-        const result = await client.quickTasks.deleteCompleted({
-          confirm: params.confirm,
-        });
+        if (!params.confirm) {
+          throw new Error("Confirmation required to delete completed tasks");
+        }
+        const result = await QuickTaskService.deleteCompleted(userId);
         return {
           success: true,
           message: `Deleted ${result.deletedCount} completed quick tasks`,
@@ -270,7 +270,7 @@ export const createQuickTaskTools = (client: Client) => ({
     inputSchema: batchCreateQuickTasksSchema,
     execute: async (params) => {
       try {
-        const result = await client.quickTasks.batchCreate(params);
+        const result = await QuickTaskService.batchCreate(userId, params.tasks);
         return {
           success: result.success,
           created: result.created,
@@ -296,7 +296,10 @@ export const createQuickTaskTools = (client: Client) => ({
     inputSchema: batchUpdateQuickTasksSchema,
     execute: async (params) => {
       try {
-        const result = await client.quickTasks.batchUpdate(params);
+        const result = await QuickTaskService.batchUpdate(
+          userId,
+          params.updates
+        );
         return {
           success: result.success,
           updated: result.updated,
@@ -322,7 +325,10 @@ export const createQuickTaskTools = (client: Client) => ({
     inputSchema: batchDeleteQuickTasksSchema,
     execute: async (params) => {
       try {
-        const result = await client.quickTasks.batchDelete(params);
+        const result = await QuickTaskService.batchDelete(
+          userId,
+          params.quickTaskIds
+        );
         return {
           success: result.success,
           deletedCount: result.deletedCount,

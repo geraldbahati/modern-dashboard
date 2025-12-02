@@ -105,7 +105,7 @@ export const chat = protectedProcedure
       onFinish: async ({ text, finishReason, usage }) => {
         console.log("Stream finished:", { text, finishReason, usage });
       },
-      tools: createTools(client),
+      tools: createTools(client, user.id),
     });
 
     // Convert to event iterator for streaming over oRPC

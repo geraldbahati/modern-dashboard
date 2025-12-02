@@ -3,10 +3,7 @@
  */
 
 import { z } from "zod";
-import { eq, and, desc } from "drizzle-orm";
 import { ORPCError } from "@orpc/server";
-import { appDb } from "@workspace/db/app-db";
-import { quickTasks } from "@workspace/db/app-db/schema";
 import {
   readSecurityProcedure,
   writeSecurityProcedure,
@@ -15,13 +12,8 @@ import {
   quickTaskSchema,
   createQuickTaskSchema,
   updateQuickTaskSchema,
-  type QuickTask,
 } from "../schemas/index.js";
-
-// Helper to cast database result to typed QuickTask
-const toQuickTask = (row: typeof quickTasks.$inferSelect): QuickTask => ({
-  ...row,
-});
+import { QuickTaskService } from "../services/quick-tasks";
 
 /**
  * List all quick tasks for the current user
@@ -29,13 +21,7 @@ const toQuickTask = (row: typeof quickTasks.$inferSelect): QuickTask => ({
 export const list = readSecurityProcedure
   .output(z.array(quickTaskSchema))
   .handler(async ({ context }) => {
-    const rows = await appDb
-      .select()
-      .from(quickTasks)
-      .where(eq(quickTasks.ownerId, context.user.id))
-      .orderBy(desc(quickTasks.createdAt));
-
-    return rows.map(toQuickTask);
+    return QuickTaskService.list(context.user.id);
   });
 
 /**
@@ -45,21 +31,13 @@ export const create = writeSecurityProcedure
   .input(createQuickTaskSchema)
   .output(quickTaskSchema)
   .handler(async ({ input, context }) => {
-    const [task] = await appDb
-      .insert(quickTasks)
-      .values({
-        text: input.text,
-        ownerId: context.user.id,
-      })
-      .returning();
-
-    if (!task) {
+    try {
+      return await QuickTaskService.create(context.user.id, input.text);
+    } catch (error) {
       throw new ORPCError("INTERNAL_SERVER_ERROR", {
         message: "Failed to create task",
       });
     }
-
-    return toQuickTask(task);
   });
 
 /**
@@ -69,36 +47,16 @@ export const toggle = writeSecurityProcedure
   .input(z.object({ id: z.string().uuid() }))
   .output(quickTaskSchema)
   .handler(async ({ input, context }) => {
-    // Verify ownership and get current state
-    const [existing] = await appDb
-      .select()
-      .from(quickTasks)
-      .where(
-        and(
-          eq(quickTasks.id, input.id),
-          eq(quickTasks.ownerId, context.user.id)
-        )
-      );
-
-    if (!existing) {
-      throw new ORPCError("NOT_FOUND", {
-        message: "Task not found",
-      });
-    }
-
-    const [updated] = await appDb
-      .update(quickTasks)
-      .set({ completed: !existing.completed })
-      .where(eq(quickTasks.id, input.id))
-      .returning();
-
-    if (!updated) {
+    try {
+      return await QuickTaskService.toggle(context.user.id, input.id);
+    } catch (error) {
+      if (error instanceof Error && error.message === "Task not found") {
+        throw new ORPCError("NOT_FOUND", { message: "Task not found" });
+      }
       throw new ORPCError("INTERNAL_SERVER_ERROR", {
         message: "Failed to update task",
       });
     }
-
-    return toQuickTask(updated);
   });
 
 /**
@@ -113,36 +71,20 @@ export const update = writeSecurityProcedure
   )
   .output(quickTaskSchema)
   .handler(async ({ input, context }) => {
-    // Verify ownership
-    const [existing] = await appDb
-      .select()
-      .from(quickTasks)
-      .where(
-        and(
-          eq(quickTasks.id, input.id),
-          eq(quickTasks.ownerId, context.user.id)
-        )
+    try {
+      return await QuickTaskService.update(
+        context.user.id,
+        input.id,
+        input.data
       );
-
-    if (!existing) {
-      throw new ORPCError("NOT_FOUND", {
-        message: "Task not found",
-      });
-    }
-
-    const [updated] = await appDb
-      .update(quickTasks)
-      .set(input.data)
-      .where(eq(quickTasks.id, input.id))
-      .returning();
-
-    if (!updated) {
+    } catch (error) {
+      if (error instanceof Error && error.message === "Task not found") {
+        throw new ORPCError("NOT_FOUND", { message: "Task not found" });
+      }
       throw new ORPCError("INTERNAL_SERVER_ERROR", {
         message: "Failed to update task",
       });
     }
-
-    return toQuickTask(updated);
   });
 
 /**
@@ -152,15 +94,7 @@ export const getById = readSecurityProcedure
   .input(z.object({ id: z.string().uuid() }))
   .output(quickTaskSchema)
   .handler(async ({ input, context }) => {
-    const [task] = await appDb
-      .select()
-      .from(quickTasks)
-      .where(
-        and(
-          eq(quickTasks.id, input.id),
-          eq(quickTasks.ownerId, context.user.id)
-        )
-      );
+    const task = await QuickTaskService.getById(context.user.id, input.id);
 
     if (!task) {
       throw new ORPCError("NOT_FOUND", {
@@ -168,7 +102,7 @@ export const getById = readSecurityProcedure
       });
     }
 
-    return toQuickTask(task);
+    return task;
   });
 
 /**
@@ -178,26 +112,16 @@ export const remove = writeSecurityProcedure
   .input(z.object({ id: z.string().uuid() }))
   .output(z.object({ success: z.boolean() }))
   .handler(async ({ input, context }) => {
-    // Verify ownership
-    const [existing] = await appDb
-      .select()
-      .from(quickTasks)
-      .where(
-        and(
-          eq(quickTasks.id, input.id),
-          eq(quickTasks.ownerId, context.user.id)
-        )
-      );
-
-    if (!existing) {
-      throw new ORPCError("NOT_FOUND", {
-        message: "Task not found",
+    try {
+      return await QuickTaskService.delete(context.user.id, input.id);
+    } catch (error) {
+      if (error instanceof Error && error.message === "Task not found") {
+        throw new ORPCError("NOT_FOUND", { message: "Task not found" });
+      }
+      throw new ORPCError("INTERNAL_SERVER_ERROR", {
+        message: "Failed to delete task",
       });
     }
-
-    await appDb.delete(quickTasks).where(eq(quickTasks.id, input.id));
-
-    return { success: true };
   });
 
 /**
@@ -213,17 +137,7 @@ export const deleteCompleted = writeSecurityProcedure
       });
     }
 
-    const result = await appDb
-      .delete(quickTasks)
-      .where(
-        and(
-          eq(quickTasks.ownerId, context.user.id),
-          eq(quickTasks.completed, true)
-        )
-      )
-      .returning();
-
-    return { success: true, deletedCount: result.length };
+    return QuickTaskService.deleteCompleted(context.user.id);
   });
 
 /**
@@ -257,42 +171,7 @@ export const batchCreate = writeSecurityProcedure
     })
   )
   .handler(async ({ input, context }) => {
-    const created: z.infer<typeof quickTaskSchema>[] = [];
-    const failed: { index: number; error: string }[] = [];
-
-    for (let i = 0; i < input.tasks.length; i++) {
-      const task = input.tasks[i];
-      if (!task) continue;
-
-      try {
-        const [newTask] = await appDb
-          .insert(quickTasks)
-          .values({
-            text: task.text,
-            completed: task.completed || false,
-            ownerId: context.user.id,
-          })
-          .returning();
-
-        if (newTask) {
-          created.push(toQuickTask(newTask));
-        }
-      } catch (error) {
-        failed.push({
-          index: i,
-          error:
-            error instanceof Error
-              ? error.message
-              : "Failed to create quick task",
-        });
-      }
-    }
-
-    return {
-      success: failed.length === 0,
-      created,
-      failed,
-    };
+    return QuickTaskService.batchCreate(context.user.id, input.tasks);
   });
 
 /**
@@ -327,53 +206,7 @@ export const batchUpdate = writeSecurityProcedure
     })
   )
   .handler(async ({ input, context }) => {
-    const updated: z.infer<typeof quickTaskSchema>[] = [];
-    const failed: { quickTaskId: string; error: string }[] = [];
-
-    for (const update of input.updates) {
-      try {
-        const { quickTaskId, ...updates } = update;
-
-        // Verify ownership
-        const [existing] = await appDb
-          .select()
-          .from(quickTasks)
-          .where(
-            and(
-              eq(quickTasks.id, quickTaskId),
-              eq(quickTasks.ownerId, context.user.id)
-            )
-          );
-
-        if (!existing) {
-          throw new Error("Quick task not found");
-        }
-
-        const [updatedTask] = await appDb
-          .update(quickTasks)
-          .set(updates)
-          .where(eq(quickTasks.id, quickTaskId))
-          .returning();
-
-        if (updatedTask) {
-          updated.push(toQuickTask(updatedTask));
-        }
-      } catch (error) {
-        failed.push({
-          quickTaskId: update.quickTaskId,
-          error:
-            error instanceof Error
-              ? error.message
-              : "Failed to update quick task",
-        });
-      }
-    }
-
-    return {
-      success: failed.length === 0,
-      updated,
-      failed,
-    };
+    return QuickTaskService.batchUpdate(context.user.id, input.updates);
   });
 
 /**
@@ -399,42 +232,7 @@ export const batchDelete = writeSecurityProcedure
     })
   )
   .handler(async ({ input, context }) => {
-    const failed: { quickTaskId: string; error: string }[] = [];
-    let deletedCount = 0;
-
-    for (const quickTaskId of input.quickTaskIds) {
-      try {
-        const result = await appDb
-          .delete(quickTasks)
-          .where(
-            and(
-              eq(quickTasks.id, quickTaskId),
-              eq(quickTasks.ownerId, context.user.id)
-            )
-          )
-          .returning();
-
-        if (result.length > 0) {
-          deletedCount++;
-        } else {
-          throw new Error("Quick task not found");
-        }
-      } catch (error) {
-        failed.push({
-          quickTaskId,
-          error:
-            error instanceof Error
-              ? error.message
-              : "Failed to delete quick task",
-        });
-      }
-    }
-
-    return {
-      success: failed.length === 0,
-      deletedCount,
-      failed,
-    };
+    return QuickTaskService.batchDelete(context.user.id, input.quickTaskIds);
   });
 
 // Export router
