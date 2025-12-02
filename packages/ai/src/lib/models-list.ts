@@ -9,6 +9,14 @@ export interface ModelOption {
 }
 
 export const modelsList: ModelOption[] = [
+  // xAI models
+  {
+    id: "grok-4.1-fast",
+    name: "Grok 4.1 Fast",
+    provider: "xAI",
+    description: "Fastest Grok model (Free)",
+  },
+
   // OpenAI models
   {
     id: "gpt-4o",
@@ -99,7 +107,7 @@ export const modelsList: ModelOption[] = [
     description: "Advanced reasoning model",
   },
 
-  // xAI models
+  // Other xAI models
   {
     id: "grok-beta",
     name: "Grok Beta",
@@ -111,11 +119,5 @@ export const modelsList: ModelOption[] = [
     name: "Grok 2 Vision",
     provider: "xAI",
     description: "Grok with vision capabilities",
-  },
-  {
-    id: "grok-4.1-fast",
-    name: "Grok 4.1 Fast",
-    provider: "xAI",
-    description: "Fastest Grok model (Free)",
   },
 ];

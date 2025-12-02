@@ -9,6 +9,11 @@ import {
   useStickToBottomContext,
 } from "@workspace/ui/components/ai-elements/conversation";
 import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@workspace/ui/components/avatar";
+import {
   Reasoning,
   ReasoningContent,
   ReasoningTrigger,
@@ -86,7 +91,7 @@ export function AiAssistantView() {
   }, [selectedModel]);
 
   // Get user context from session
-  const { userName } = useUserContext();
+  const { userName, userImage } = useUserContext();
 
   // History state
   const [history, setHistory] = useState<HistoryConversation[]>([]);
@@ -295,215 +300,220 @@ export function AiAssistantView() {
           <ConversationContent className="pb-32 pointer-events-auto">
             {messages.map((msg) => (
               <Message key={msg.id} from={msg.role}>
-                <MessageContent>
-                  {msg.parts.map((part, partIndex) => {
-                    // Render text parts
-                    if (part.type === "text") {
-                      return (
-                        <MessageResponse key={partIndex}>
-                          {part.text}
-                        </MessageResponse>
-                      );
-                    }
+                  <MessageContent>
+                    {msg.parts.map((part, partIndex) => {
+                      // Render text parts
+                      if (part.type === "text") {
+                        return (
+                          <MessageResponse key={partIndex}>
+                            {part.text}
+                          </MessageResponse>
+                        );
+                      }
 
-                    // Render reasoning parts
-                    if (part.type === "reasoning") {
-                      return (
-                        <Reasoning
-                          key={partIndex}
-                          className="w-full"
-                          isStreaming={
-                            status === "streaming" &&
-                            partIndex === msg.parts.length - 1 &&
-                            msg.id === messages.at(-1)?.id
-                          }
-                        >
-                          <ReasoningTrigger />
-                          <ReasoningContent>{part.text}</ReasoningContent>
-                        </Reasoning>
-                      );
-                    }
-
-                    // Render tool invocations (type starts with 'tool-')
-                    if (part.type.startsWith("tool-")) {
-                      const toolName = part.type.slice(5);
-                      const toolPart = part as any;
-
-                      return (
-                        <div key={partIndex} className="flex flex-col gap-2">
-                          {(() => {
-                            const ToolComponent = getToolComponent(toolName);
-                            if (
-                              ToolComponent &&
-                              toolPart.state === "output-available"
-                            ) {
-                              return (
-                                <ToolComponent
-                                  tool={toolPart}
-                                  result={toolPart.output}
-                                  onAction={(action: string, data: any) => {
-                                    let prompt = "";
-                                    if (
-                                      toolName === "listUsers" &&
-                                      action === "viewDetails"
-                                    ) {
-                                      prompt = `Show details for user ${data}`;
-                                    } else if (toolName === "getUserById") {
-                                      switch (action) {
-                                        case "edit":
-                                          prompt = `I want to edit user ${data}`;
-                                          break;
-                                        case "ban":
-                                          prompt = `Ban user ${data}`;
-                                          break;
-                                        case "delete":
-                                          prompt = `Delete user ${data}`;
-                                          break;
-                                      }
-                                    }
-                                    // Quick Task Actions
-                                    else if (
-                                      toolName === "listQuickTasks" ||
-                                      toolName.endsWith("QuickTask")
-                                    ) {
-                                      switch (action) {
-                                        case "toggle":
-                                          prompt = `Toggle quick task ${data}`;
-                                          break;
-                                        case "delete":
-                                          prompt = `Delete quick task ${data}`;
-                                          break;
-                                        case "create":
-                                          prompt = `Create quick task: ${data}`;
-                                          break;
-                                      }
-                                    }
-                                    // Task Actions
-                                    else if (
-                                      toolName === "listTasks" ||
-                                      toolName === "getMyTasks" ||
-                                      toolName.endsWith("Task")
-                                    ) {
-                                      switch (action) {
-                                        case "viewDetails":
-                                          prompt = `Show details for task ${data}`;
-                                          break;
-                                        case "changeStatus":
-                                          prompt = `Change status of task ${data.taskId} to ${data.status}`;
-                                          break;
-                                        case "edit":
-                                          prompt = `Edit task ${data}`;
-                                          break;
-                                        case "delete":
-                                          prompt = `Delete task ${data}`;
-                                          break;
-                                        case "toggle_subtask":
-                                          // Optional: handle subtask toggle if API supports it via chat
-                                          break;
-                                        case "share":
-                                          // Optional: handle share
-                                          break;
-                                      }
-                                    }
-                                    // Project Actions
-                                    else if (
-                                      toolName === "listProjects" ||
-                                      toolName.endsWith("Project")
-                                    ) {
-                                      switch (action) {
-                                        case "viewDetails":
-                                          prompt = `Show details for project ${data}`;
-                                          break;
-                                        case "edit":
-                                          prompt = `Edit project ${data}`;
-                                          break;
-                                        case "delete":
-                                          prompt = `Delete project ${data}`;
-                                          break;
-                                      }
-                                    }
-                                    // Quick Task Actions
-                                    else if (
-                                      toolName === "listQuickTasks" ||
-                                      toolName.endsWith("QuickTask")
-                                    ) {
-                                      switch (action) {
-                                        case "toggle":
-                                          prompt = `Toggle quick task ${data}`;
-                                          break;
-                                        case "delete":
-                                          prompt = `Delete quick task ${data}`;
-                                          break;
-                                        case "create":
-                                          prompt = `Create quick task: ${data}`;
-                                          break;
-                                      }
-                                    }
-                                    // Task Actions
-                                    else if (
-                                      toolName === "listTasks" ||
-                                      toolName === "getMyTasks" ||
-                                      toolName.endsWith("Task")
-                                    ) {
-                                      switch (action) {
-                                        case "viewDetails":
-                                          prompt = `Show details for task ${data}`;
-                                          break;
-                                        case "changeStatus":
-                                          prompt = `Change status of task ${data.taskId} to ${data.status}`;
-                                          break;
-                                        case "edit":
-                                          prompt = `Edit task ${data}`;
-                                          break;
-                                        case "delete":
-                                          prompt = `Delete task ${data}`;
-                                          break;
-                                        case "toggle_subtask":
-                                          // Optional: handle subtask toggle if API supports it via chat
-                                          break;
-                                        case "share":
-                                          // Optional: handle share
-                                          break;
-                                      }
-                                    }
-                                    // Project Actions
-                                    else if (
-                                      toolName === "listProjects" ||
-                                      toolName.endsWith("Project")
-                                    ) {
-                                      switch (action) {
-                                        case "viewDetails":
-                                          prompt = `Show details for project ${data}`;
-                                          break;
-                                        case "edit":
-                                          prompt = `Edit project ${data}`;
-                                          break;
-                                        case "delete":
-                                          prompt = `Delete project ${data}`;
-                                          break;
-                                      }
-                                    }
-
-                                    if (prompt) {
-                                      sendMessage({
-                                        role: "user",
-                                        parts: [{ type: "text", text: prompt }],
-                                      });
-                                    }
-                                  }}
-                                />
-                              );
+                      // Render reasoning parts
+                      if (part.type === "reasoning") {
+                        return (
+                          <Reasoning
+                            key={partIndex}
+                            className="w-full"
+                            isStreaming={
+                              status === "streaming" &&
+                              partIndex === msg.parts.length - 1 &&
+                              msg.id === messages.at(-1)?.id
                             }
-                            return null;
-                          })()}
-                        </div>
-                      );
-                    }
+                          >
+                            <ReasoningTrigger />
+                            <ReasoningContent>{part.text}</ReasoningContent>
+                          </Reasoning>
+                        );
+                      }
 
-                    return null;
-                  })}
-                </MessageContent>
-              </Message>
+                      // Render tool invocations (type starts with 'tool-')
+                      if (part.type.startsWith("tool-")) {
+                        const toolName = part.type.slice(5);
+                        const toolPart = part as any;
+
+                        return (
+                          <div
+                            key={partIndex}
+                            className="flex flex-col gap-2 w-full max-w-full overflow-x-auto"
+                          >
+                            {(() => {
+                              const ToolComponent = getToolComponent(toolName);
+                              if (
+                                ToolComponent &&
+                                toolPart.state === "output-available"
+                              ) {
+                                return (
+                                  <ToolComponent
+                                    tool={toolPart}
+                                    result={toolPart.output}
+                                    onAction={(action: string, data: any) => {
+                                      let prompt = "";
+                                      if (
+                                        toolName === "listUsers" &&
+                                        action === "viewDetails"
+                                      ) {
+                                        prompt = `Show details for user ${data}`;
+                                      } else if (toolName === "getUserById") {
+                                        switch (action) {
+                                          case "edit":
+                                            prompt = `I want to edit user ${data}`;
+                                            break;
+                                          case "ban":
+                                            prompt = `Ban user ${data}`;
+                                            break;
+                                          case "delete":
+                                            prompt = `Delete user ${data}`;
+                                            break;
+                                        }
+                                      }
+                                      // Quick Task Actions
+                                      else if (
+                                        toolName === "listQuickTasks" ||
+                                        toolName.endsWith("QuickTask")
+                                      ) {
+                                        switch (action) {
+                                          case "toggle":
+                                            prompt = `Toggle quick task ${data}`;
+                                            break;
+                                          case "delete":
+                                            prompt = `Delete quick task ${data}`;
+                                            break;
+                                          case "create":
+                                            prompt = `Create quick task: ${data}`;
+                                            break;
+                                        }
+                                      }
+                                      // Task Actions
+                                      else if (
+                                        toolName === "listTasks" ||
+                                        toolName === "getMyTasks" ||
+                                        toolName.endsWith("Task")
+                                      ) {
+                                        switch (action) {
+                                          case "viewDetails":
+                                            prompt = `Show details for task ${data}`;
+                                            break;
+                                          case "changeStatus":
+                                            prompt = `Change status of task ${data.taskId} to ${data.status}`;
+                                            break;
+                                          case "edit":
+                                            prompt = `Edit task ${data}`;
+                                            break;
+                                          case "delete":
+                                            prompt = `Delete task ${data}`;
+                                            break;
+                                          case "toggle_subtask":
+                                            // Optional: handle subtask toggle if API supports it via chat
+                                            break;
+                                          case "share":
+                                            // Optional: handle share
+                                            break;
+                                        }
+                                      }
+                                      // Project Actions
+                                      else if (
+                                        toolName === "listProjects" ||
+                                        toolName.endsWith("Project")
+                                      ) {
+                                        switch (action) {
+                                          case "viewDetails":
+                                            prompt = `Show details for project ${data}`;
+                                            break;
+                                          case "edit":
+                                            prompt = `Edit project ${data}`;
+                                            break;
+                                          case "delete":
+                                            prompt = `Delete project ${data}`;
+                                            break;
+                                        }
+                                      }
+                                      // Quick Task Actions
+                                      else if (
+                                        toolName === "listQuickTasks" ||
+                                        toolName.endsWith("QuickTask")
+                                      ) {
+                                        switch (action) {
+                                          case "toggle":
+                                            prompt = `Toggle quick task ${data}`;
+                                            break;
+                                          case "delete":
+                                            prompt = `Delete quick task ${data}`;
+                                            break;
+                                          case "create":
+                                            prompt = `Create quick task: ${data}`;
+                                            break;
+                                        }
+                                      }
+                                      // Task Actions
+                                      else if (
+                                        toolName === "listTasks" ||
+                                        toolName === "getMyTasks" ||
+                                        toolName.endsWith("Task")
+                                      ) {
+                                        switch (action) {
+                                          case "viewDetails":
+                                            prompt = `Show details for task ${data}`;
+                                            break;
+                                          case "changeStatus":
+                                            prompt = `Change status of task ${data.taskId} to ${data.status}`;
+                                            break;
+                                          case "edit":
+                                            prompt = `Edit task ${data}`;
+                                            break;
+                                          case "delete":
+                                            prompt = `Delete task ${data}`;
+                                            break;
+                                          case "toggle_subtask":
+                                            // Optional: handle subtask toggle if API supports it via chat
+                                            break;
+                                          case "share":
+                                            // Optional: handle share
+                                            break;
+                                        }
+                                      }
+                                      // Project Actions
+                                      else if (
+                                        toolName === "listProjects" ||
+                                        toolName.endsWith("Project")
+                                      ) {
+                                        switch (action) {
+                                          case "viewDetails":
+                                            prompt = `Show details for project ${data}`;
+                                            break;
+                                          case "edit":
+                                            prompt = `Edit project ${data}`;
+                                            break;
+                                          case "delete":
+                                            prompt = `Delete project ${data}`;
+                                            break;
+                                        }
+                                      }
+
+                                      if (prompt) {
+                                        sendMessage({
+                                          role: "user",
+                                          parts: [
+                                            { type: "text", text: prompt },
+                                          ],
+                                        });
+                                      }
+                                    }}
+                                  />
+                                );
+                              }
+                              return null;
+                            })()}
+                          </div>
+                        );
+                      }
+
+                      return null;
+                    })}
+                  </MessageContent>
+                </Message>
             ))}
           </ConversationContent>
         )}

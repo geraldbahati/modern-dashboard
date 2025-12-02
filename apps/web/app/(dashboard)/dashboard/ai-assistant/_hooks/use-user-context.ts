@@ -6,6 +6,7 @@ export interface UserContext {
   userName: string;
   userEmail: string;
   userRole: string;
+  userImage?: string | null;
 }
 
 /**
@@ -21,5 +22,6 @@ export function useUserContext(): UserContext {
     userName: user?.name || user?.email?.split("@")[0] || "User",
     userEmail: user?.email || "",
     userRole: (user as any)?.role || "user",
+    userImage: user?.image,
   };
 }

@@ -57,7 +57,8 @@ export const createTools = (client: Client) => ({
 
   // GET USER BY ID
   getUserById: tool({
-    description: "Get detailed information about a specific user by their ID.",
+    description:
+      "Get detailed information about a specific user by their ID. Use this to show user details.",
     inputSchema: getUserByIdSchema,
     execute: async (params) => {
       try {
