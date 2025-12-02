@@ -32,7 +32,7 @@ export const authSecurityMiddleware = createMiddleware<{
 
   const decision = await authArcjet.protect(
     c.req.raw as unknown as IncomingMessage,
-    { userId },
+    { userId }
   );
 
   if (decision.isDenied()) {
@@ -43,7 +43,7 @@ export const authSecurityMiddleware = createMiddleware<{
           ? "Too many requests"
           : "Access denied",
       },
-      403,
+      403
     );
   }
 
@@ -62,13 +62,20 @@ export const apiSecurityMiddleware = createMiddleware<{
     return next();
   }
 
+  // Bypass Arcjet for internal requests
+  const internalToken = c.req.header("x-internal-token");
+  const expectedToken = process.env.INTERNAL_API_KEY || "your-secret-key";
+  if (internalToken === expectedToken) {
+    return next();
+  }
+
   // Get userId for rate limiting (use "anonymous" for unauthenticated requests)
   const user = c.get("user");
   const userId = user?.id || "anonymous";
 
   const decision = await apiArcjet.protect(
     c.req.raw as unknown as IncomingMessage,
-    { userId },
+    { userId }
   );
 
   if (decision.isDenied()) {
@@ -79,7 +86,7 @@ export const apiSecurityMiddleware = createMiddleware<{
           ? "Too many requests"
           : "Access denied",
       },
-      403,
+      403
     );
   }
 

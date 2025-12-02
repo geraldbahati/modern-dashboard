@@ -56,6 +56,7 @@ export const chat = protectedProcedure
       headers: () => ({
         cookie,
         origin,
+        "x-internal-token": process.env.INTERNAL_API_KEY || "your-secret-key",
       }),
     });
 
