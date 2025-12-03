@@ -119,8 +119,8 @@ export function AiAssistantView() {
             },
             {
               signal: options.abortSignal,
-            }
-          )
+            },
+          ),
         );
       },
       reconnectToStream() {
@@ -186,7 +186,7 @@ export function AiAssistantView() {
         console.error("Failed to save message", error);
       }
     },
-    [currentConversationId, sendMessage]
+    [currentConversationId, sendMessage],
   );
 
   const onLoad = useCallback(
@@ -204,7 +204,7 @@ export function AiAssistantView() {
             e.stopImmediatePropagation();
             e.preventDefault();
           },
-          { capture: true }
+          { capture: true },
         );
       }
 
@@ -232,7 +232,7 @@ export function AiAssistantView() {
         requestAnimationFrame(animate);
       }
     },
-    [isMobile]
+    [isMobile],
   );
 
   return (
@@ -258,8 +258,12 @@ export function AiAssistantView() {
       `,
         }}
       />
+      {/* Background elements - behind everything */}
       {messages.length === 0 && (
-        <div id="spline-wrapper" className="absolute inset-0 z-0">
+        <div
+          id="spline-wrapper"
+          className="absolute inset-0 z-0 pointer-events-none"
+        >
           <div className="w-full h-full relative">
             <Spline
               className="w-full h-full"
@@ -277,329 +281,305 @@ export function AiAssistantView() {
         x={-1}
         y={-1}
         strokeDasharray={"4 2"}
-        className="[mask-image:radial-gradient(600px_circle_at_center,white,transparent)] opacity-50 pointer-events-none"
+        className="[mask-image:radial-gradient(600px_circle_at_center,white,transparent)] opacity-50 pointer-events-none absolute inset-0 z-[1]"
       />
-      <Conversation className="z-10 w-full mx-auto pt-16 pointer-events-none">
-        <ScrollManager messages={messages} />
-        {messages.length === 0 ? (
-          <ConversationEmptyState
-            title=""
-            description=""
-            className="p-0 overflow-hidden relative h-full bg-transparent"
-          >
-            <div className="z-10 flex flex-col items-center gap-2 pointer-events-none mt-64">
-              <h3 className="font-medium text-xl text-foreground animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-500 fill-mode-both">
-                Good to see you, {userName.split(" ")[0] || userName}.
-              </h3>
-              <p className="text-sm text-muted-foreground animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-700 fill-mode-both">
-                How can I help you today?
-              </p>
-            </div>
-          </ConversationEmptyState>
-        ) : (
-          <ConversationContent className="pb-32 pointer-events-auto">
-            {messages.map((msg) => (
-              <Message key={msg.id} from={msg.role}>
-                <MessageContent>
-                  {msg.parts.map((part, partIndex) => {
-                    // Render text parts
-                    if (part.type === "text") {
-                      return (
-                        <MessageResponse key={partIndex}>
-                          {part.text}
-                        </MessageResponse>
-                      );
-                    }
 
-                    // Render reasoning parts
-                    if (part.type === "reasoning") {
-                      return (
-                        <Reasoning
-                          key={partIndex}
-                          className="w-full"
-                          isStreaming={
-                            status === "streaming" &&
-                            partIndex === msg.parts.length - 1 &&
-                            msg.id === messages.at(-1)?.id
-                          }
-                        >
-                          <ReasoningTrigger />
-                          <ReasoningContent>{part.text}</ReasoningContent>
-                        </Reasoning>
-                      );
-                    }
+      {/* Main conversation area - needs flex-1 to take available space */}
+      <div className="flex-1 flex flex-col relative z-10 min-h-0 pt-16">
+        <Conversation className="w-full max-w-4xl mx-auto">
+          <ConversationContent className="pb-4">
+            {messages.length === 0 ? (
+              <ConversationEmptyState
+                title=""
+                description=""
+                className="p-0 overflow-hidden relative h-full bg-transparent"
+              >
+                <div className="absolute inset-0 flex flex-col items-center justify-center px-4">
+                  {/* Spacer to push text below blob - takes up blob's space */}
+                  <div className="h-[40vh] sm:h-[45vh] md:h-[50vh]" />
 
-                    // Render tool invocations (type starts with 'tool-')
-                    if (part.type.startsWith("tool-")) {
-                      const toolName = part.type.slice(5);
-                      const toolPart = part as any;
+                  {/* Text positioned below center */}
+                  <div className="relative z-20 flex flex-col items-center gap-2 pointer-events-none">
+                    <h3 className="font-medium text-base sm:text-lg md:text-xl text-foreground text-center animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-500 fill-mode-both drop-shadow-lg">
+                      Good to see you, {userName.split(" ")[0] || userName}.
+                    </h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground text-center animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-700 fill-mode-both drop-shadow-lg">
+                      How can I help you today?
+                    </p>
+                  </div>
+                </div>
+              </ConversationEmptyState>
+            ) : (
+              messages.map((msg) => (
+                <Message key={msg.id} from={msg.role}>
+                  <MessageContent>
+                    {msg.parts.map((part, partIndex) => {
+                      // Render text parts
+                      if (part.type === "text") {
+                        return (
+                          <MessageResponse key={partIndex}>
+                            {part.text}
+                          </MessageResponse>
+                        );
+                      }
 
-                      return (
-                        <div
-                          key={partIndex}
-                          className="flex flex-col gap-2 w-full max-w-full overflow-x-auto"
-                        >
-                          {(() => {
-                            const ToolComponent = getToolComponent(toolName);
-                            if (
-                              ToolComponent &&
-                              toolPart.state === "output-available"
-                            ) {
-                              return (
-                                <ToolComponent
-                                  tool={toolPart}
-                                  result={toolPart.output}
-                                  onAction={(action: string, data: any) => {
-                                    let prompt = "";
-                                    if (
-                                      toolName === "listUsers" &&
-                                      action === "viewDetails"
-                                    ) {
-                                      prompt = `Show details for user ${data}`;
-                                    } else if (toolName === "getUserById") {
-                                      switch (action) {
-                                        case "edit":
-                                          prompt = `I want to edit user ${data}`;
-                                          break;
-                                        case "ban":
-                                          prompt = `Ban user ${data}`;
-                                          break;
-                                        case "delete":
-                                          prompt = `Delete user ${data}`;
-                                          break;
-                                      }
-                                    }
-                                    // Quick Task Actions
-                                    else if (
-                                      toolName === "listQuickTasks" ||
-                                      toolName.endsWith("QuickTask")
-                                    ) {
-                                      switch (action) {
-                                        case "toggle":
-                                          prompt = `Toggle quick task ${data}`;
-                                          break;
-                                        case "delete":
-                                          prompt = `Delete quick task ${data}`;
-                                          break;
-                                        case "create":
-                                          prompt = `Create quick task: ${data}`;
-                                          break;
-                                      }
-                                    }
-                                    // Task Actions
-                                    else if (
-                                      toolName === "listTasks" ||
-                                      toolName === "getMyTasks" ||
-                                      toolName.endsWith("Task")
-                                    ) {
-                                      switch (action) {
-                                        case "viewDetails":
-                                          prompt = `Show details for task ${data}`;
-                                          break;
-                                        case "changeStatus":
-                                          prompt = `Change status of task ${data.taskId} to ${data.status}`;
-                                          break;
-                                        case "edit":
-                                          prompt = `Edit task ${data}`;
-                                          break;
-                                        case "delete":
-                                          prompt = `Delete task ${data}`;
-                                          break;
-                                        case "toggle_subtask":
-                                          // Optional: handle subtask toggle if API supports it via chat
-                                          break;
-                                        case "share":
-                                          // Optional: handle share
-                                          break;
-                                      }
-                                    }
-                                    // Project Actions
-                                    else if (
-                                      toolName === "listProjects" ||
-                                      toolName.endsWith("Project")
-                                    ) {
-                                      switch (action) {
-                                        case "viewDetails":
-                                          prompt = `Show details for project ${data}`;
-                                          break;
-                                        case "edit":
-                                          prompt = `Edit project ${data}`;
-                                          break;
-                                        case "delete":
-                                          prompt = `Delete project ${data}`;
-                                          break;
-                                      }
-                                    }
-                                    // Quick Task Actions
-                                    else if (
-                                      toolName === "listQuickTasks" ||
-                                      toolName.endsWith("QuickTask")
-                                    ) {
-                                      switch (action) {
-                                        case "toggle":
-                                          prompt = `Toggle quick task ${data}`;
-                                          break;
-                                        case "delete":
-                                          prompt = `Delete quick task ${data}`;
-                                          break;
-                                        case "create":
-                                          prompt = `Create quick task: ${data}`;
-                                          break;
-                                      }
-                                    }
-                                    // Task Actions
-                                    else if (
-                                      toolName === "listTasks" ||
-                                      toolName === "getMyTasks" ||
-                                      toolName.endsWith("Task")
-                                    ) {
-                                      switch (action) {
-                                        case "viewDetails":
-                                          prompt = `Show details for task ${data}`;
-                                          break;
-                                        case "changeStatus":
-                                          prompt = `Change status of task ${data.taskId} to ${data.status}`;
-                                          break;
-                                        case "edit":
-                                          prompt = `Edit task ${data}`;
-                                          break;
-                                        case "delete":
-                                          prompt = `Delete task ${data}`;
-                                          break;
-                                        case "toggle_subtask":
-                                          // Optional: handle subtask toggle if API supports it via chat
-                                          break;
-                                        case "share":
-                                          // Optional: handle share
-                                          break;
-                                      }
-                                    }
-                                    // Project Actions
-                                    else if (
-                                      toolName === "listProjects" ||
-                                      toolName.endsWith("Project")
-                                    ) {
-                                      switch (action) {
-                                        case "viewDetails":
-                                          prompt = `Show details for project ${data}`;
-                                          break;
-                                        case "edit":
-                                          prompt = `Edit project ${data}`;
-                                          break;
-                                        case "delete":
-                                          prompt = `Delete project ${data}`;
-                                          break;
-                                      }
-                                    }
-
-                                    if (prompt) {
-                                      sendMessage({
-                                        role: "user",
-                                        parts: [{ type: "text", text: prompt }],
-                                      });
-                                    }
-                                  }}
-                                />
-                              );
+                      // Render reasoning parts
+                      if (part.type === "reasoning") {
+                        return (
+                          <Reasoning
+                            key={partIndex}
+                            className="w-full"
+                            isStreaming={
+                              status === "streaming" &&
+                              partIndex === msg.parts.length - 1 &&
+                              msg.id === messages.at(-1)?.id
                             }
-                            return null;
-                          })()}
-                        </div>
-                      );
-                    }
+                          >
+                            <ReasoningTrigger />
+                            <ReasoningContent>{part.text}</ReasoningContent>
+                          </Reasoning>
+                        );
+                      }
 
-                    return null;
-                  })}
-                </MessageContent>
-              </Message>
-            ))}
+                      // Render tool invocations (type starts with 'tool-')
+                      if (part.type.startsWith("tool-")) {
+                        const toolName = part.type.slice(5);
+                        const toolPart = part as any;
+
+                        return (
+                          <div
+                            key={partIndex}
+                            className="flex flex-col gap-2 w-full max-w-full overflow-x-auto"
+                          >
+                            {(() => {
+                              const ToolComponent = getToolComponent(toolName);
+                              if (
+                                ToolComponent &&
+                                toolPart.state === "output-available"
+                              ) {
+                                return (
+                                  <ToolComponent
+                                    tool={toolPart}
+                                    result={toolPart.output}
+                                    onAction={(action: string, data: any) => {
+                                      let prompt = "";
+                                      if (
+                                        toolName === "listUsers" &&
+                                        action === "viewDetails"
+                                      ) {
+                                        prompt = `Show details for user ${data}`;
+                                      } else if (toolName === "getUserById") {
+                                        switch (action) {
+                                          case "edit":
+                                            prompt = `I want to edit user ${data}`;
+                                            break;
+                                          case "ban":
+                                            prompt = `Ban user ${data}`;
+                                            break;
+                                          case "delete":
+                                            prompt = `Delete user ${data}`;
+                                            break;
+                                        }
+                                      }
+                                      // Quick Task Actions
+                                      else if (
+                                        toolName === "listQuickTasks" ||
+                                        toolName.endsWith("QuickTask")
+                                      ) {
+                                        switch (action) {
+                                          case "toggle":
+                                            prompt = `Toggle quick task ${data}`;
+                                            break;
+                                          case "delete":
+                                            prompt = `Delete quick task ${data}`;
+                                            break;
+                                          case "create":
+                                            prompt = `Create quick task: ${data}`;
+                                            break;
+                                        }
+                                      }
+                                      // Task Actions
+                                      else if (
+                                        toolName === "listTasks" ||
+                                        toolName === "getMyTasks" ||
+                                        toolName.endsWith("Task")
+                                      ) {
+                                        switch (action) {
+                                          case "viewDetails":
+                                            prompt = `Show details for task ${data}`;
+                                            break;
+                                          case "changeStatus":
+                                            prompt = `Change status of task ${data.taskId} to ${data.status}`;
+                                            break;
+                                          case "edit":
+                                            prompt = `Edit task ${data}`;
+                                            break;
+                                          case "delete":
+                                            prompt = `Delete task ${data}`;
+                                            break;
+                                          case "toggle_subtask":
+                                            // Optional: handle subtask toggle if API supports it via chat
+                                            break;
+                                          case "share":
+                                            // Optional: handle share
+                                            break;
+                                        }
+                                      }
+                                      // Project Actions
+                                      else if (
+                                        toolName === "listProjects" ||
+                                        toolName.endsWith("Project")
+                                      ) {
+                                        switch (action) {
+                                          case "viewDetails":
+                                            prompt = `Show details for project ${data}`;
+                                            break;
+                                          case "edit":
+                                            prompt = `Edit project ${data}`;
+                                            break;
+                                          case "delete":
+                                            prompt = `Delete project ${data}`;
+                                            break;
+                                        }
+                                      }
+                                      // Quick Task Actions
+                                      else if (
+                                        toolName === "listQuickTasks" ||
+                                        toolName.endsWith("QuickTask")
+                                      ) {
+                                        switch (action) {
+                                          case "toggle":
+                                            prompt = `Toggle quick task ${data}`;
+                                            break;
+                                          case "delete":
+                                            prompt = `Delete quick task ${data}`;
+                                            break;
+                                          case "create":
+                                            prompt = `Create quick task: ${data}`;
+                                            break;
+                                        }
+                                      }
+                                      // Task Actions
+                                      else if (
+                                        toolName === "listTasks" ||
+                                        toolName === "getMyTasks" ||
+                                        toolName.endsWith("Task")
+                                      ) {
+                                        switch (action) {
+                                          case "viewDetails":
+                                            prompt = `Show details for task ${data}`;
+                                            break;
+                                          case "changeStatus":
+                                            prompt = `Change status of task ${data.taskId} to ${data.status}`;
+                                            break;
+                                          case "edit":
+                                            prompt = `Edit task ${data}`;
+                                            break;
+                                          case "delete":
+                                            prompt = `Delete task ${data}`;
+                                            break;
+                                          case "toggle_subtask":
+                                            // Optional: handle subtask toggle if API supports it via chat
+                                            break;
+                                          case "share":
+                                            // Optional: handle share
+                                            break;
+                                        }
+                                      }
+                                      // Project Actions
+                                      else if (
+                                        toolName === "listProjects" ||
+                                        toolName.endsWith("Project")
+                                      ) {
+                                        switch (action) {
+                                          case "viewDetails":
+                                            prompt = `Show details for project ${data}`;
+                                            break;
+                                          case "edit":
+                                            prompt = `Edit project ${data}`;
+                                            break;
+                                          case "delete":
+                                            prompt = `Delete project ${data}`;
+                                            break;
+                                        }
+                                      }
+
+                                      if (prompt) {
+                                        sendMessage({
+                                          role: "user",
+                                          parts: [
+                                            { type: "text", text: prompt },
+                                          ],
+                                        });
+                                      }
+                                    }}
+                                  />
+                                );
+                              }
+                              return null;
+                            })()}
+                          </div>
+                        );
+                      }
+
+                      return null;
+                    })}
+                  </MessageContent>
+                </Message>
+              ))
+            )}
           </ConversationContent>
-        )}
-        <ConversationScrollButton className="pointer-events-auto" />
-      </Conversation>
+          <ConversationScrollButton />
+        </Conversation>
 
-      <div className="absolute bottom-8 left-0 right-0 p-4 z-20 flex justify-center">
-        <PromptInputProvider>
-          <div className="w-full max-w-4xl bg-background/80 backdrop-blur-md rounded-3xl border border-border shadow-2xl flex flex-col overflow-hidden transition-all duration-200 ease-in-out">
-            <CustomAttachments />
-            <PromptInput
-              onSubmit={handleSubmit}
-              className="w-full bg-transparent border-none shadow-none flex items-center px-2 py-2 gap-2 [&_[data-slot=input-group]]:!border-0 [&_[data-slot=input-group]]:!shadow-none [&_[data-slot=input-group]]:!bg-transparent [&_[data-slot=input-group]]:!ring-0"
-              globalDrop
-              multiple
-            >
-              <PromptInputActionMenu>
-                <PromptInputActionMenuTrigger className="rounded-full w-8 h-8 p-0 hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
-                  <PlusIcon className="w-5 h-5" />
-                </PromptInputActionMenuTrigger>
-                <PromptInputActionMenuContent>
-                  <PromptInputActionAddAttachments />
-                </PromptInputActionMenuContent>
-              </PromptInputActionMenu>
+        {/* Input area - fixed at bottom */}
+        <div className="p-4 flex justify-center shrink-0">
+          <PromptInputProvider>
+            <div className="w-full max-w-4xl bg-background/80 backdrop-blur-md rounded-3xl border border-border shadow-2xl flex flex-col overflow-hidden transition-all duration-200 ease-in-out">
+              <CustomAttachments />
+              <PromptInput
+                onSubmit={handleSubmit}
+                className="w-full bg-transparent border-none shadow-none flex items-center px-2 py-2 gap-2 [&_[data-slot=input-group]]:!border-0 [&_[data-slot=input-group]]:!shadow-none [&_[data-slot=input-group]]:!bg-transparent [&_[data-slot=input-group]]:!ring-0"
+                globalDrop
+                multiple
+              >
+                <PromptInputActionMenu>
+                  <PromptInputActionMenuTrigger className="rounded-full w-8 h-8 p-0 hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
+                    <PlusIcon className="w-5 h-5" />
+                  </PromptInputActionMenuTrigger>
+                  <PromptInputActionMenuContent>
+                    <PromptInputActionAddAttachments />
+                  </PromptInputActionMenuContent>
+                </PromptInputActionMenu>
 
-              <PromptInputTextarea
-                onChange={(e) => setText(e.target.value)}
-                ref={textareaRef}
-                value={text}
-                placeholder="Ask anything"
-                className="flex-1 min-h-[40px] max-h-[200px] py-2 bg-transparent border-none focus-visible:ring-0 text-foreground placeholder:text-muted-foreground resize-none"
-              />
-
-              <div className="flex items-center gap-2">
-                <PromptInputSpeechButton
-                  onTranscriptionChange={setText}
-                  textareaRef={textareaRef}
-                  className="rounded-full w-8 h-8 p-0 hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                <PromptInputTextarea
+                  onChange={(e) => setText(e.target.value)}
+                  ref={textareaRef}
+                  value={text}
+                  placeholder="Ask anything"
+                  className="flex-1 min-h-[40px] max-h-[200px] py-2 bg-transparent border-none focus-visible:ring-0 text-foreground placeholder:text-muted-foreground resize-none"
                 />
-                <PromptInputSubmit
-                  disabled={!text || status === "streaming"}
-                  className="rounded-full w-10 h-10 p-0 bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ArrowUpIcon className="w-5 h-5" />
-                </PromptInputSubmit>
-              </div>
-            </PromptInput>
-          </div>
-        </PromptInputProvider>
+
+                <div className="flex items-center gap-2">
+                  <PromptInputSpeechButton
+                    onTranscriptionChange={setText}
+                    textareaRef={textareaRef}
+                    className="rounded-full w-8 h-8 p-0 hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                  />
+                  <PromptInputSubmit
+                    disabled={!text || status === "streaming"}
+                    className="rounded-full w-10 h-10 p-0 bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ArrowUpIcon className="w-5 h-5" />
+                  </PromptInputSubmit>
+                </div>
+              </PromptInput>
+            </div>
+          </PromptInputProvider>
+        </div>
       </div>
     </div>
   );
-}
-
-function ScrollManager({ messages }: { messages: UIMessage[] }) {
-  const { scrollToBottom, isAtBottom } = useStickToBottomContext();
-  const prevMessagesLength = useRef(messages.length);
-
-  useEffect(() => {
-    // Scroll to bottom on initial load
-    scrollToBottom();
-  }, [scrollToBottom]);
-
-  useEffect(() => {
-    const length = messages.length;
-    const prevLength = prevMessagesLength.current;
-    const lastMessage = messages[length - 1];
-
-    if (length > prevLength) {
-      // New message added
-      if (lastMessage?.role === "user") {
-        // Always scroll to bottom for new user messages
-        scrollToBottom();
-      } else if (isAtBottom) {
-        // For new AI messages, scroll if we were already at the bottom
-        scrollToBottom();
-      }
-    } else {
-      // Existing message updated (streaming)
-      if (isAtBottom) {
-        scrollToBottom();
-      }
-    }
-
-    prevMessagesLength.current = length;
-  }, [messages, scrollToBottom, isAtBottom]);
-
-  return null;
 }
 
 function CustomAttachments() {
